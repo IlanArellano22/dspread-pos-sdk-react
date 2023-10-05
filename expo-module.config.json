@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android", "web"],
+  "ios": {
+    "modules": ["DispreadPosSdkReactModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.dispreadpossdkreact.DispreadPosSdkReactModule"]
+  }
+}
