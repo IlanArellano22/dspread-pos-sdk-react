@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@ihaz/react-ui-utils": "^1.2.1-beta",
     "expo": "~49.0.13",
     "react": "18.2.0",
     "react-native": "0.72.5"

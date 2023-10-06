@@ -1,26 +1,75 @@
-import { NativeModulesProxy, EventEmitter, Subscription } from 'expo-modules-core';
+import {
+  NativeModulesProxy,
+  EventEmitter,
+  Subscription,
+} from "expo-modules-core";
 
 // Import the native module. On web, it will be resolved to DispreadPosSdkReact.web.ts
 // and on native platforms to DispreadPosSdkReact.ts
-import DispreadPosSdkReactModule from './DispreadPosSdkReactModule';
-import DispreadPosSdkReactView from './DispreadPosSdkReactView';
-import { ChangeEventPayload, DispreadPosSdkReactViewProps } from './DispreadPosSdkReact.types';
+import DispreadPosSdkReactModule from "./DispreadPosSdkReactModule";
+import DispreadPosSdkReactView from "./DispreadPosSdkReactView";
+import {
+  ChangeEventPayload,
+  DispreadPosSdkReactViewProps,
+  QPOSListenners,
+  QPOSService,
+  CHECKVALUE_KEYTYPE,
+  Display,
+  DispreadPosModule,
+  DoTradeResult,
+  Error,
+  FelicaStatusCode,
+  TransactionResult,
+  UpdateInformationResult,
+} from "./DispreadPosSdkReact.types";
 
-// Get the native constant value.
-export const PI = DispreadPosSdkReactModule.PI;
+export namespace QPOS {
+  export const initPosService = () =>
+    DispreadPosSdkReactModule.initPosService();
+  export const getQposId = () => DispreadPosSdkReactModule.getQposId();
+  export const getUpdateCheckValue = () =>
+    DispreadPosSdkReactModule.getUpdateCheckValue();
+  export const getKeyCheckValue: QPOSService["getKeyCheckValue"] = (...args) =>
+    DispreadPosSdkReactModule.getKeyCheckValue(...args);
+  export const setMasterKey: QPOSService["setMasterKey"] = (...args) =>
+    DispreadPosSdkReactModule.setMasterKey(...args);
+  export const updateWorkKey: QPOSService["updateWorkKey"] = (...args) =>
+    DispreadPosSdkReactModule.updateWorkKey(...args);
+  export const updateEMVConfigByXml: QPOSService["updateEMVConfigByXml"] = (
+    ...args
+  ) => DispreadPosSdkReactModule.updateEMVConfigByXml(...args);
+  export const updatePosFirmware = () =>
+    DispreadPosSdkReactModule.updatePosFirmware();
 
-export function hello(): string {
-  return DispreadPosSdkReactModule.hello();
+  const emitter = new EventEmitter(
+    DispreadPosSdkReactModule ?? NativeModulesProxy.DispreadPosSdkReact
+  );
+
+  export type Listenners = Partial<Record<keyof QPOSListenners, Subscription>>;
+
+  export function addListenners(
+    listenners: Partial<QPOSListenners>
+  ): Listenners {
+    let suscriptions: Listenners = {};
+    for (const key in listenners) {
+      suscriptions[key] = emitter.addListener(key, listenners[key]);
+    }
+    return suscriptions;
+  }
 }
 
-export async function setValueAsync(value: string) {
-  return await DispreadPosSdkReactModule.setValueAsync(value);
-}
-
-const emitter = new EventEmitter(DispreadPosSdkReactModule ?? NativeModulesProxy.DispreadPosSdkReact);
-
-export function addChangeListener(listener: (event: ChangeEventPayload) => void): Subscription {
-  return emitter.addListener<ChangeEventPayload>('onChange', listener);
-}
-
-export { DispreadPosSdkReactView, DispreadPosSdkReactViewProps, ChangeEventPayload };
+export {
+  DispreadPosSdkReactView,
+  ChangeEventPayload,
+  DispreadPosSdkReactViewProps,
+  QPOSListenners,
+  QPOSService,
+  CHECKVALUE_KEYTYPE,
+  Display,
+  DispreadPosModule,
+  DoTradeResult,
+  Error,
+  FelicaStatusCode,
+  TransactionResult,
+  UpdateInformationResult,
+};

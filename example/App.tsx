@@ -1,20 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
-
-import * as DispreadPosSdkReact from 'dispread-pos-sdk-react';
+import { QPOSContextProvider } from "./context/QPOSContext";
+import MainScreen from "./Screens/main";
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>{DispreadPosSdkReact.hello()}</Text>
-    </View>
+    <QPOSContextProvider>
+      <MainScreen />
+    </QPOSContextProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
