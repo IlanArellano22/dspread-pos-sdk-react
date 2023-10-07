@@ -6,6 +6,11 @@ export type DispreadPosSdkReactViewProps = {
   name: string;
 };
 
+export enum QPOSConnectionStatus {
+  SUCCESS,
+  COMUNNICATION_MODE_UNKNOWN,
+}
+
 export interface DispreadPosModule extends QPOSService {
   initPosService: () => boolean;
 }
@@ -157,6 +162,7 @@ export interface QPOSService {
   ) => void;
   updateEMVConfigByXml: (xmlContent: string) => void;
   updatePosFirmware: () => void;
+  getBluetoothState: () => boolean;
 }
 
 export interface QPOSListenners {

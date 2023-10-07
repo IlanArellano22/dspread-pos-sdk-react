@@ -61,6 +61,9 @@ class DispreadPosSdkReactModule : Module() {
     Function("updateEMVConfigByXml") { xmlContent: String ->
       pos?.updateEMVConfigByXml(xmlContent);
     }
+    Function("getBluetoothState") {
+     return@Function pos?.getBluetoothState();
+    }
 
     View(DispreadPosSdkReactView::class) {
       // Defines a setter for the `name` prop.

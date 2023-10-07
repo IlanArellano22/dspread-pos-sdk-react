@@ -23,7 +23,8 @@ import {
   UpdateInformationResult,
 } from "./DispreadPosSdkReact.types";
 
-export namespace QPOS {
+namespace QPOS {
+  //Init Pos Service
   export const initPosService = () =>
     DispreadPosSdkReactModule.initPosService();
   export const getQposId = () => DispreadPosSdkReactModule.getQposId();
@@ -60,6 +61,7 @@ export namespace QPOS {
 
 export {
   DispreadPosSdkReactView,
+  QPOS,
   ChangeEventPayload,
   DispreadPosSdkReactViewProps,
   QPOSListenners,
