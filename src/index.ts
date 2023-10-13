@@ -7,7 +7,6 @@ import {
 // Import the native module. On web, it will be resolved to DispreadPosSdkReact.web.ts
 // and on native platforms to DispreadPosSdkReact.ts
 import DispreadPosSdkReactModule from "./DispreadPosSdkReactModule";
-import DispreadPosSdkReactView from "./DispreadPosSdkReactView";
 import {
   ChangeEventPayload,
   DispreadPosSdkReactViewProps,
@@ -21,27 +20,12 @@ import {
   FelicaStatusCode,
   TransactionResult,
   UpdateInformationResult,
+  CommunicationMode,
+  TransactionType,
 } from "./DispreadPosSdkReact.types";
+import QPOSServiceClass from "./Service/QPOS/class";
 
 namespace QPOS {
-  //Init Pos Service
-  export const initPosService = () =>
-    DispreadPosSdkReactModule.initPosService();
-  export const getQposId = () => DispreadPosSdkReactModule.getQposId();
-  export const getUpdateCheckValue = () =>
-    DispreadPosSdkReactModule.getUpdateCheckValue();
-  export const getKeyCheckValue: QPOSService["getKeyCheckValue"] = (...args) =>
-    DispreadPosSdkReactModule.getKeyCheckValue(...args);
-  export const setMasterKey: QPOSService["setMasterKey"] = (...args) =>
-    DispreadPosSdkReactModule.setMasterKey(...args);
-  export const updateWorkKey: QPOSService["updateWorkKey"] = (...args) =>
-    DispreadPosSdkReactModule.updateWorkKey(...args);
-  export const updateEMVConfigByXml: QPOSService["updateEMVConfigByXml"] = (
-    ...args
-  ) => DispreadPosSdkReactModule.updateEMVConfigByXml(...args);
-  export const updatePosFirmware = () =>
-    DispreadPosSdkReactModule.updatePosFirmware();
-
   const emitter = new EventEmitter(
     DispreadPosSdkReactModule ?? NativeModulesProxy.DispreadPosSdkReact
   );
@@ -51,6 +35,7 @@ namespace QPOS {
   export function addListenners(
     listenners: Partial<QPOSListenners>
   ): Listenners {
+    console.log({ listenners });
     let suscriptions: Listenners = {};
     for (const key in listenners) {
       suscriptions[key] = emitter.addListener(key, listenners[key]);
@@ -60,7 +45,7 @@ namespace QPOS {
 }
 
 export {
-  DispreadPosSdkReactView,
+  QPOSServiceClass,
   QPOS,
   ChangeEventPayload,
   DispreadPosSdkReactViewProps,
@@ -74,4 +59,6 @@ export {
   FelicaStatusCode,
   TransactionResult,
   UpdateInformationResult,
+  CommunicationMode,
+  TransactionType,
 };

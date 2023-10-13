@@ -1,15 +1,13 @@
-import { createContext, PropsWithChildren, useEffect } from "react";
-import { QPOS } from "dispread-pos-sdk-react";
-import { QPOSListenners, QPOSService } from "dispread-pos-sdk-react";
+import { createContext, PropsWithChildren } from "react";
+import { QPOS, QPOSServiceClass } from "dispread-pos-sdk-react";
+import { QPOSListenners } from "dispread-pos-sdk-react";
 import { useValueHandler } from "@ihaz/react-ui-utils";
 import ObjectUtils from "../utils/object";
 
 interface IQPOSContext {
-  getPos: () => QPOSService | null;
-  removeEventListenners: () => void;
-  addEventListenners: (listenners: Partial<QPOSListenners>) => void;
-  initPosService: () => void;
-  hasInitializated: () => boolean;
+  getPos: () => QPOSServiceClass | null;
+  addEventListeners: (listenners: Partial<QPOSListenners>) => void;
+  removeEventListeners: () => void;
 }
 
 export const QPOSContext = createContext<IQPOSContext>(
@@ -17,34 +15,18 @@ export const QPOSContext = createContext<IQPOSContext>(
 );
 
 export const QPOSContextProvider = ({ children }: PropsWithChildren) => {
-  const [getPos, setPos] = useValueHandler<QPOSService | null>(null);
+  const [getPos] = useValueHandler(() => new QPOSServiceClass());
   const [QPOSSuscriptions, setQPOSSuscriptions] =
     useValueHandler<QPOS.Listenners>({});
-  const [hasInitializated, setHasInitializated] =
-    useValueHandler<boolean>(false);
 
-  const initPosService = () => {
-    setHasInitializated(QPOS.initPosService());
-    setPos(
-      ObjectUtils.pick(
-        QPOS,
-        "getQposId",
-        "getUpdateCheckValue",
-        "getKeyCheckValue",
-        "setMasterKey",
-        "updateWorkKey",
-        "updateEMVConfigByXml",
-        "updatePosFirmware"
-      )
-    );
+  const addEventListeners = (listenners: Partial<QPOSListenners>) => {
+    const pos = getPos();
+    if (!pos || !ObjectUtils.isEmptyObject(QPOSSuscriptions())) return;
+    pos.mergeListeners(listenners);
+    setQPOSSuscriptions(QPOS.addListenners(pos.getListeners()));
   };
 
-  const addEventListenners = (listenners: Partial<QPOSListenners>) => {
-    if (!ObjectUtils.isEmptyObject(QPOSSuscriptions())) return;
-    setQPOSSuscriptions(QPOS.addListenners(listenners));
-  };
-
-  const removeEventListenners = () => {
+  const removeEventListeners = () => {
     const suscriptions = QPOSSuscriptions();
     for (const key in suscriptions) {
       suscriptions[key as keyof QPOSListenners]?.remove();
@@ -56,10 +38,8 @@ export const QPOSContextProvider = ({ children }: PropsWithChildren) => {
     <QPOSContext.Provider
       value={{
         getPos,
-        removeEventListenners,
-        addEventListenners,
-        initPosService,
-        hasInitializated,
+        addEventListeners,
+        removeEventListeners,
       }}
     >
       {children}

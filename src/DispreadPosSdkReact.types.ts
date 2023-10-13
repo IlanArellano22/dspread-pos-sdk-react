@@ -12,7 +12,9 @@ export enum QPOSConnectionStatus {
 }
 
 export interface DispreadPosModule extends QPOSService {
-  initPosService: () => boolean;
+  initPosService: (mode: CommunicationMode) => boolean;
+  closePosService: () => void;
+  destroy: () => void;
 }
 
 export enum DoTradeResult {
@@ -144,6 +146,93 @@ export enum CHECKVALUE_KEYTYPE {
   DUKPT_MKSK_ALLTYPE,
 }
 
+export enum CommunicationMode {
+  AUDIO,
+  /** @deprecated */
+  BLUETOOTH_VER2,
+  UART,
+  UART_SERVICE,
+  UART_K7,
+  /** @deprecated */
+  BLUETOOTH_2Mode,
+  USB,
+  /** @deprecated */
+  BLUETOOTH_4Mode,
+  UART_GOOD,
+  USB_OTG,
+  USB_OTG_CDC_ACM,
+  BLUETOOTH,
+  BLUETOOTH_BLE,
+  UNKNOW,
+}
+
+export enum UsbOTGDriver {
+  CDCACM,
+  FTDI,
+  CH340,
+  CP21XX,
+  PROLIFIC,
+  CH34XU,
+}
+
+export enum EmvOption {
+  START,
+  START_WITH_FORCE_ONLINE,
+  START_WITH_FORCE_PIN,
+  START_WITH_FORCE_ONLINE_FORCE_PIN,
+  START_WITH_RETURN_ICC_CARD_NUMBER,
+  START_WITH_FORCE_ONLINE_RETURN_ICC_CARD_NUMBER,
+  START_WITH_FORCE_PIN_RETURN_ICC_CARD_NUMBER,
+  START_WITH_FORCE_ONLINE_FORCE_PIN_RETURN_ICC_CARD_NUMBER,
+}
+
+export enum CardTradeMode {
+  ONLY_INSERT_CARD,
+  ONLY_SWIPE_CARD,
+  TAP_INSERT_CARD,
+  TAP_INSERT_CARD_NOTUP,
+  SWIPE_TAP_INSERT_CARD,
+  UNALLOWED_LOW_TRADE,
+  SWIPE_INSERT_CARD,
+  SWIPE_TAP_INSERT_CARD_UNALLOWED_LOW_TRADE,
+  SWIPE_TAP_INSERT_CARD_NOTUP_UNALLOWED_LOW_TRADE,
+  ONLY_TAP_CARD,
+  ONLY_TAP_CARD_QF,
+  SWIPE_TAP_INSERT_CARD_NOTUP,
+  SWIPE_TAP_INSERT_CARD_DOWN,
+  SWIPE_INSERT_CARD_UNALLOWED_LOW_TRADE,
+  SWIPE_TAP_INSERT_CARD_UNALLOWED_LOW_TRADE_NEW,
+  ONLY_INSERT_CARD_NOPIN,
+  SWIPE_TAP_INSERT_CARD_NOTUP_DELAY,
+}
+
+export enum TransactionType {
+  GOODS,
+  SERVICES,
+  CASH,
+  CASHBACK,
+  INQUIRY,
+  TRANSFER,
+  ADMIN,
+  CASHDEPOSIT,
+  PAYMENT,
+  PBOCLOG,
+  SALE,
+  PREAUTH,
+  ECQ_DESIGNATED_LOAD,
+  ECQ_UNDESIGNATED_LOAD,
+  ECQ_CASH_LOAD,
+  ECQ_CASH_LOAD_VOID,
+  ECQ_INQUIRE_LOG,
+  REFUND,
+  UPDATE_PIN,
+  SALES_NEW,
+  NON_LEGACY_MONEY_ADD,
+  LEGACY_MONEY_ADD,
+  BALANCE_UPDATE,
+  MINI_STATEMENT,
+}
+
 export interface QPOSService {
   getQposId: () => void;
   getUpdateCheckValue: () => void;
@@ -163,6 +252,47 @@ export interface QPOSService {
   updateEMVConfigByXml: (xmlContent: string) => void;
   updatePosFirmware: () => void;
   getBluetoothState: () => boolean;
+  scanQPos2Mode: (timeout: number) => void;
+  startScanQposBLE: (timeout: number) => void;
+  stopScanQPos2Mode: () => void;
+  clearBluetoothBuffer: () => void;
+  disconnectBT: () => void;
+  doTrade: (keyIndex: number, timeout: number) => void;
+  setDeviceAddress: (address: string) => void;
+  openUart: () => void;
+  closeUart: () => void;
+  openUsb: () => void;
+  closeUsb: () => void;
+  setD20Trade: (flag: boolean) => void;
+  getUpdateProgress: () => number;
+  setUsbSerialDriver: (driver: UsbOTGDriver) => void;
+  connectBluetoothDevice: (blueTootchAddress: string) => void;
+  getNFCBatchData: () => Record<string, string>;
+  doEmvApp: () => void;
+  cancelTrade: () => void;
+  setCardTradeMode: (cardTradeMode: CardTradeMode) => void;
+  selectEmvApp: (position: number) => void;
+  cancelSelectEmvApp: () => void;
+  pinMapSync: (value: string, timeout: number) => void;
+  setAmount: (
+    amount: string,
+    cashbackAmount: string,
+    currencyCode: string,
+    transactionType: TransactionType,
+    isPosDisplayAmount?: boolean
+  ) => void;
+  isServerConnected: (isConnected: boolean) => void;
+  anlysEmvIccData: (tlv: string) => Record<string, string>;
+  sendOnlineProcessResult: (tlv: string | null) => void;
+  sendTime: (terminalTime: string) => void;
+  finalConfirm: (isConfirmed: boolean) => void;
+  resetPosStatus: () => void;
+  sendApdu: (apduString: string) => void;
+  sendPin: (pin: string) => void;
+  cancelPin: () => void;
+  getCvmKeyList: () => string;
+  getEncryptData: () => Record<string, string>;
+  setQuickEmv: (isQuickEnv: boolean) => void;
 }
 
 export interface QPOSListenners {

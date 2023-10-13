@@ -14,31 +14,43 @@ import com.dspread.xpos.QPOSService.TransactionResult
 import com.dspread.xpos.QPOSService.UpdateInformationResult
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.service.QPOSManager
 import java.util.Hashtable
 
 class DispreadPosSdkReactModule : Module() {
   private var pos: QPOSService? = null;
 
-  fun _initPosService() {
-    pos = QPOSService.getInstance(appContext.reactContext, QPOSService.CommunicationMode.BLUETOOTH);
+  fun _initPosService(): Boolean {
+    Log.d("Efevooo", "INITIALIZE SERVICE");
+    pos = QPOSManager.getInstance(appContext.reactContext, QPOSService.CommunicationMode.BLUETOOTH).getPos();
+    Log.d("Efevooo", "POS INSTANCE: $pos");
     val listener = MyPosClass();
     val handler = Handler(Looper.myLooper()!!);
     pos?.initListener(handler, listener);
+    return pos != null;
+  }
+
+  fun _destroyPosService() {
+    QPOSManager.clearInstance();
+    pos = null;
   }
 
   override fun definition() = ModuleDefinition {
     Name("DispreadPosSdkReact")
 
 
-    Events(*Constants.getPOSEvents().toTypedArray())
+    Events(*expo.contants.dispreadconstants.Constants.getPOSEvents().toTypedArray())
 
-    Function("initPosService") {
-      if(pos != null) {
-        return@Function false;
-      } else {
-        _initPosService();
-        return@Function pos != null;
-      }
+    Function("initPosService") { mode: Int ->
+      _initPosService();
+    }
+
+    Function("closePosService") {
+      pos?.cancelTrade();
+    }
+
+    Function("destroy") {
+      _destroyPosService();
     }
 
     Function("getQposId") {
@@ -62,15 +74,9 @@ class DispreadPosSdkReactModule : Module() {
       pos?.updateEMVConfigByXml(xmlContent);
     }
     Function("getBluetoothState") {
-     return@Function pos?.getBluetoothState();
+     return@Function pos?.bluetoothState;
     }
 
-    View(DispreadPosSdkReactView::class) {
-      // Defines a setter for the `name` prop.
-      Prop("name") { view: DispreadPosSdkReactView, prop: String ->
-        println(prop)
-      }
-    }
   }
 
   inner class MyPosClass : CQPOSService() {
@@ -173,7 +179,11 @@ class DispreadPosSdkReactModule : Module() {
 
     override fun transferMifareData(flag: String?) {}
 
-    override fun onRequestSetAmount() {}
+    override fun onRequestSetAmount() {
+      Log.d("Efevooo", "onRequestSetAmount()");
+      super.onRequestSetAmount();
+      sendEvent("onRequestSetAmount");
+    }
 
     override fun onRequestSelectEmvApp(appList: ArrayList<String?>?) {}
 

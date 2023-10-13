@@ -1,10 +1,12 @@
-import { QPOSListenners } from "dispread-pos-sdk-react/DispreadPosSdkReact.types";
+import { useEffectAsync } from "@ihaz/react-ui-utils";
+import { CommunicationMode, QPOSListenners } from "dispread-pos-sdk-react";
+import { TransactionType } from "dispread-pos-sdk-react";
 import { useContext, useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, TouchableHighlight } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { QPOSContext } from "../../context/QPOSContext";
 
 export default function MainScreen() {
-  const { getPos, addEventListenners, removeEventListenners, initPosService } =
+  const { getPos, addEventListeners, removeEventListeners } =
     useContext(QPOSContext);
 
   const listeners = useMemo<Partial<QPOSListenners>>(
@@ -28,26 +30,53 @@ export default function MainScreen() {
     []
   );
 
-  useEffect(() => {
-    initPosService();
-    addEventListenners(listeners);
+  useEffectAsync(async () => {
+    console.log("effect");
+    addEventListeners(listeners);
+    const pos = getPos();
+    if (pos) {
+      console.log("BEFORE INITIALIZE");
+      await pos.initPosService(CommunicationMode.BLUETOOTH, {
+        amount: "2",
+        cashbackAmount: "",
+        currencyCode: "156",
+        transactionType: TransactionType.GOODS,
+      });
+      console.log("INITIALIZATED");
+    }
 
     return () => {
-      removeEventListenners();
+      removeEventListeners();
+      pos?.destroyPosService();
     };
   }, []);
 
-  const onGetPosId = () => {
+  const onGetPosId = async () => {
     const pos = getPos();
-    pos?.getQposId();
+    if (!pos) return;
+    console.log("posIdExecute");
+    try {
+      const id = await pos.getQposId();
+      console.log({ id });
+    } catch (error) {
+      console.log({ error });
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text>Dispread POS</Text>
-      <TouchableHighlight>
-        <Text onPress={onGetPosId}>GetPosId</Text>
-      </TouchableHighlight>
+      <TouchableOpacity
+        style={{
+          height: 100,
+          backgroundColor: "#000000",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ color: "#ffffff" }} onPress={onGetPosId}>
+          GetPosId
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }

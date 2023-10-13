@@ -1,4 +1,4 @@
-package expo.modules.dispreadpossdkreact
+package expo.contants.dispreadconstants
 
 class Constants {
     companion object {
