@@ -1,10 +1,12 @@
-import { QPOSContextProvider } from "./context/QPOSContext";
-import MainScreen from "./Screens/main";
+import React from "react";
+import Navigation from "./navigation";
+import modalManager from "./components/Manager/modalManager";
 
 export default function App() {
   return (
-    <QPOSContextProvider>
-      <MainScreen />
-    </QPOSContextProvider>
+    <>
+      <Navigation />
+      <modalManager.Component />
+    </>
   );
 }

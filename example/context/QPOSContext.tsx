@@ -1,13 +1,8 @@
-import { createContext, PropsWithChildren } from "react";
-import { QPOS, QPOSServiceClass } from "dispread-pos-sdk-react";
-import { QPOSListenners } from "dispread-pos-sdk-react";
-import { useValueHandler } from "@ihaz/react-ui-utils";
-import ObjectUtils from "../utils/object";
+import React, { createContext, PropsWithChildren, useMemo } from "react";
+import { QPOSServiceClass } from "dispread-pos-sdk-react";
 
 interface IQPOSContext {
-  getPos: () => QPOSServiceClass | null;
-  addEventListeners: (listenners: Partial<QPOSListenners>) => void;
-  removeEventListeners: () => void;
+  pos: QPOSServiceClass;
 }
 
 export const QPOSContext = createContext<IQPOSContext>(
@@ -15,31 +10,12 @@ export const QPOSContext = createContext<IQPOSContext>(
 );
 
 export const QPOSContextProvider = ({ children }: PropsWithChildren) => {
-  const [getPos] = useValueHandler(() => new QPOSServiceClass());
-  const [QPOSSuscriptions, setQPOSSuscriptions] =
-    useValueHandler<QPOS.Listenners>({});
-
-  const addEventListeners = (listenners: Partial<QPOSListenners>) => {
-    const pos = getPos();
-    if (!pos || !ObjectUtils.isEmptyObject(QPOSSuscriptions())) return;
-    pos.mergeListeners(listenners);
-    setQPOSSuscriptions(QPOS.addListenners(pos.getListeners()));
-  };
-
-  const removeEventListeners = () => {
-    const suscriptions = QPOSSuscriptions();
-    for (const key in suscriptions) {
-      suscriptions[key as keyof QPOSListenners]?.remove();
-    }
-    setQPOSSuscriptions({});
-  };
+  const pos = useMemo(() => new QPOSServiceClass(), []);
 
   return (
     <QPOSContext.Provider
       value={{
-        getPos,
-        addEventListeners,
-        removeEventListeners,
+        pos,
       }}
     >
       {children}

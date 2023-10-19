@@ -1,5 +1,6 @@
 package expo.modules.dispreadpossdkreact
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.os.Handler
 import android.os.Looper
@@ -45,6 +46,10 @@ class DispreadPosSdkReactModule : Module() {
       _initPosService();
     }
 
+    Function("resetPosService") {
+      pos?.resetPosStatus();
+    }
+
     Function("closePosService") {
       pos?.cancelTrade();
     }
@@ -56,12 +61,43 @@ class DispreadPosSdkReactModule : Module() {
     Function("getQposId") {
       pos?.getQposId();
     }
+
+    Function("getSdkVersion") {
+      return@Function QPOSService.getSdkVersion();
+    }
+
     Function("getUpdateCheckValue") {
       pos?.updateCheckValue;
     }
     Function("setMasterKey") { key: String, checkValue: String, keyIndex: Int ->
       pos?.setMasterKey(key, checkValue, keyIndex);
     }
+    Function("scanQPos2Mode") { timeout: Int ->
+      val success = pos?.scanQPos2Mode(appContext.reactContext, timeout.toLong());
+      Log.d("Efevooo", "scanQPos2Mode(): $success");
+      return@Function success;
+    }
+
+    Function("stopScanQPos2Mode") {
+      pos?.stopScanQPos2Mode();
+    }
+
+    Function("getQposInfo") {
+      pos?.getQposInfo();
+    }
+
+    Function("doTrade") { keyIndex: Int, timeout: Int ->
+      pos?.doTrade(keyIndex, timeout);
+    }
+
+    Function("sendTime") { terminalTime: String ->
+      pos?.sendTime(terminalTime);
+    }
+
+    Function("setAmount") { amount: String, cashbackAmount: String, currencyCode: String, transactionType: Int ->
+      pos?.setAmount(amount, cashbackAmount, currencyCode, QPOSService.TransactionType.GOODS);
+    }
+
     Function("updateWorkKey") { pik: String,
       pikCheck: String,
       trk: String,
@@ -75,6 +111,10 @@ class DispreadPosSdkReactModule : Module() {
     }
     Function("getBluetoothState") {
      return@Function pos?.bluetoothState;
+    }
+
+    Function("connectBluetoothDevice") { auto:  Boolean, bondtime: Int, blueToothAddress: String ->
+      pos?.connectBluetoothDevice(auto,bondtime,blueToothAddress);
     }
 
   }
@@ -123,7 +163,11 @@ class DispreadPosSdkReactModule : Module() {
 
     override fun onQposPinMapSyncResult(isSuccess: Boolean, isNeedPin: Boolean) {}
 
-    override fun onRequestWaitingUser() {}
+    override fun onRequestWaitingUser() {
+      Log.d("Efevooo", "onRequestWaitingUser()");
+      super.onRequestWaitingUser();
+      sendEvent("onRequestWaitingUser");
+    }
 
     override fun onReturnSyncVersionInfo(fmstatus: FirmwareStatus?, firmwareVersion: String?, qposStatus: QposStatus?) {}
 
@@ -137,9 +181,17 @@ class DispreadPosSdkReactModule : Module() {
 
     override fun onQposIsCardExist(cardIsExist: Boolean) {}
 
-    override fun onRequestDeviceScanFinished() {}
+    override fun onRequestDeviceScanFinished() {
+      Log.d("Efevooo", "onRequestDeviceScanFinished()");
+      super.onRequestDeviceScanFinished();
+      sendEvent("onRequestDeviceScanFinished");
+    }
 
-    override fun onQposInfoResult(posInfoData: Hashtable<String?, String?>?) {}
+    override fun onQposInfoResult(posInfoData: Hashtable<String?, String?>?) {
+      Log.d("Efevooo", "onQposInfoResult()");
+      super.onQposInfoResult(posInfoData);
+      sendEvent("onQposInfoResult", mapOf("posInfoData" to posInfoData));
+    }
 
     override fun onQposTestResult(testResultData: Hashtable<String?, String?>?) {}
 
@@ -155,7 +207,10 @@ class DispreadPosSdkReactModule : Module() {
 
     override fun onBatchWriteMifareCardResult(msg: String?, cardData: Hashtable<String?, List<String?>?>?) {}
 
-    override fun onDoTradeResult(result: DoTradeResult?, decodeData: Hashtable<String?, String?>?) {}
+    override fun onDoTradeResult(result: DoTradeResult?, decodeData: Hashtable<String?, String?>?) {
+      Log.d("Efevooo", "(DoTradeResult result, Hashtable<String, String> decodeData) " + result?.ordinal + "\n" + "decodeData:" + decodeData);
+      sendEvent("onDoTradeResult", mapOf("result" to result?.ordinal,"decodeData" to decodeData));
+    }
 
     override fun onFinishMifareCardResult(flag: Boolean) {}
 
@@ -193,7 +248,11 @@ class DispreadPosSdkReactModule : Module() {
 
     override fun onRequestOnlineProcess(tlv: String?) {}
 
-    override fun onRequestTime() {}
+    override fun onRequestTime() {
+      Log.d("Efevooo", "onRequestTime()");
+      super.onRequestTime();
+      sendEvent("onRequestTime");
+    }
 
     override fun onRequestTransactionResult(transactionResult: TransactionResult?) {}
 
@@ -220,11 +279,17 @@ class DispreadPosSdkReactModule : Module() {
       super.onError(errorState);
       Log.d("Efevooo", "onError: $errorState");
       sendEvent("onError", mapOf(
-              "value" to errorState
+              "value" to 0
       ));
     }
 
-    override fun onRequestDisplay(displayMsg: QPOSService.Display?) {}
+    override fun onRequestDisplay(displayMsg: QPOSService.Display?) {
+      super.onRequestDisplay(displayMsg);
+      Log.d("Efevooo", "onRequestDisplay: $displayMsg");
+      sendEvent("onRequestDisplay", mapOf(
+              "value" to 0
+      ));
+    }
 
     override fun onReturnReversalData(tlv: String?) {}
 
@@ -282,7 +347,19 @@ class DispreadPosSdkReactModule : Module() {
 
     override fun onReturnUpdateEMVRIDResult(isSuccess: Boolean) {}
 
-    override fun onDeviceFound(device: BluetoothDevice?) {}
+    @SuppressLint("MissingPermission")
+    override fun onDeviceFound(deviceFound: BluetoothDevice?) {
+      super.onDeviceFound(deviceFound);
+      var device: expo.types.BluetoothDevice? = null;
+      if(deviceFound != null && deviceFound.name != null) {
+        Log.d("Efevooo", "onDeviceFound(): ${deviceFound?.name} ${deviceFound?.address}");
+        device = expo.types.BluetoothDevice()
+        device.address = deviceFound.address;
+        device.name = deviceFound.name;
+        device.bondState = deviceFound.bondState;
+        sendEvent("onDeviceFound", mapOf("device" to device));
+      }
+    }
 
     override fun onReturnBatchSendAPDUResult(batchAPDUResult: LinkedHashMap<Int?, String?>?) {}
 

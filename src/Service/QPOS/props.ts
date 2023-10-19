@@ -1,27 +1,12 @@
+import {
+  QPOSListenerTag,
+  QPOSPromiseTag,
+  QPOSStack,
+  RemoveResult,
+  StackEnviroment,
+} from "../../types/QPOS";
+import { SingleElement } from "../../types/utils";
 import Utils from "../../utils";
-
-type QPOSPromiseTag = "getQposId" | "requestSetAmount";
-
-export interface QPOSStack {
-  /**Thats the internal id for this queue stack */
-  stackId: number;
-  /**Its the type of stack that work as identifier to different process */
-  tag: QPOSPromiseTag;
-}
-
-enum RemoveResult {
-  SINGLE,
-  MULTIPLE,
-  ALL,
-}
-
-type SingleElement<T extends any[]> = T extends (infer U)[] ? U : never;
-
-export interface StackEnviroment<T extends { [key: string]: any }[]> {
-  get: (predicate?: (el: SingleElement<T>) => boolean) => T;
-  set: (newValue: Omit<SingleElement<T>, "stackId">) => void;
-  remove: (predicate?: (el: SingleElement<T>) => boolean) => void;
-}
 
 const setPropByStack = <T extends Map<any, any>[]>(
   props: T,
@@ -69,17 +54,16 @@ const ObjPredicateToMapPredicate = <T extends { [key: string]: any }[]>(
   };
 };
 
-type StackProps<T extends any[]> = SingleElement<T> & QPOSStack;
+type StackProps<T extends any[]> = SingleElement<T> & QPOSStack<any>;
 
-const finishStackQueuePromise = <T extends any[]>(
+export const finishStackQueue = <T extends any[]>(
   stack: StackEnviroment<T>,
-  target: "resolve" | "reject",
-  result: any,
-  tag?: QPOSPromiseTag
+  execute: (el: SingleElement<T>) => any,
+  tag?: QPOSPromiseTag | QPOSListenerTag
 ) => {
-  const predicate = tag && ((it) => it.tag === tag);
+  const predicate = tag && ((it: SingleElement<T>) => it.tag === tag);
   const el = stack.get(predicate);
-  el.forEach((el) => el[target]?.(result));
+  el.forEach(execute);
   stack.remove(predicate);
 };
 
@@ -88,7 +72,7 @@ export const resolveStackQueue = <T extends any[]>(
   result: any,
   tag?: QPOSPromiseTag
 ) => {
-  finishStackQueuePromise(stack, "resolve", result, tag);
+  finishStackQueue(stack, (el) => el.resolve(result), tag);
 };
 
 export const rejectStackQueue = <T extends any[]>(
@@ -96,7 +80,7 @@ export const rejectStackQueue = <T extends any[]>(
   result: any,
   tag?: QPOSPromiseTag
 ) => {
-  finishStackQueuePromise(stack, "reject", result, tag);
+  finishStackQueue(stack, (el) => el.reject(result), tag);
 };
 
 export const createStackEnviroment = <T extends { [key: string]: any }[]>(

@@ -1,13 +1,4 @@
 import {
-  NativeModulesProxy,
-  EventEmitter,
-  Subscription,
-} from "expo-modules-core";
-
-// Import the native module. On web, it will be resolved to DispreadPosSdkReact.web.ts
-// and on native platforms to DispreadPosSdkReact.ts
-import DispreadPosSdkReactModule from "./DispreadPosSdkReactModule";
-import {
   ChangeEventPayload,
   DispreadPosSdkReactViewProps,
   QPOSListenners,
@@ -22,31 +13,13 @@ import {
   UpdateInformationResult,
   CommunicationMode,
   TransactionType,
-} from "./DispreadPosSdkReact.types";
+  BluetoothDevice,
+} from "./types/QPOS";
 import QPOSServiceClass from "./Service/QPOS/class";
-
-namespace QPOS {
-  const emitter = new EventEmitter(
-    DispreadPosSdkReactModule ?? NativeModulesProxy.DispreadPosSdkReact
-  );
-
-  export type Listenners = Partial<Record<keyof QPOSListenners, Subscription>>;
-
-  export function addListenners(
-    listenners: Partial<QPOSListenners>
-  ): Listenners {
-    console.log({ listenners });
-    let suscriptions: Listenners = {};
-    for (const key in listenners) {
-      suscriptions[key] = emitter.addListener(key, listenners[key]);
-    }
-    return suscriptions;
-  }
-}
 
 export {
   QPOSServiceClass,
-  QPOS,
+  /* --- TYPES --- */
   ChangeEventPayload,
   DispreadPosSdkReactViewProps,
   QPOSListenners,
@@ -61,4 +34,5 @@ export {
   UpdateInformationResult,
   CommunicationMode,
   TransactionType,
+  BluetoothDevice,
 };

@@ -1,88 +1,21 @@
+import { CommunicationMode } from "../..";
+import PosService from "../../module/QPOS";
 import {
-  CardTradeMode,
-  CHECKVALUE_KEYTYPE,
-  CommunicationMode,
+  AmountOptions,
+  PosStatus,
+  QPOSEventType,
+  QPOSListenerTag,
+  QPOSListenner,
   QPOSListenners,
-  QPOSService,
+  QPOSPromise,
+  QPOSProps,
+  Suscribers,
   TransactionType,
-  UsbOTGDriver,
-} from "../../DispreadPosSdkReact.types";
-import PosService from "../../DispreadPosSdkReactModule";
+} from "../../types/QPOS";
 import Utils from "../../utils";
-import {
-  createStackEnviroment,
-  QPOSStack,
-  rejectStackQueue,
-  resolveStackQueue,
-  StackEnviroment,
-} from "./props";
-
-interface QPOSPromise extends QPOSStack {
-  resolve: (value: any | PromiseLike<any>) => void;
-  reject: (reason?: any) => void;
-}
-
-enum PosStatus {
-  INITIALIZATED,
-  CONNECTED,
-  DISCONNECTED,
-  OFF,
-  TERMINATED,
-}
-
-interface QPOSProps {
-  promises: StackEnviroment<QPOSPromise[]>;
-  posStatus: PosStatus;
-  amountOptions?: AmountOptions;
-}
-
-interface AmountOptions {
-  amount: string;
-  cashbackAmount: string;
-  currencyCode: string;
-  transactionType: TransactionType;
-}
-
-const INITIAL_PROPS: QPOSProps = {
-  promises: createStackEnviroment<QPOSPromise[]>([]),
-  posStatus: PosStatus.OFF,
-};
-
-const getInternalListeners = (
-  getProps: () => QPOSProps
-): Partial<QPOSListenners> => ({
-  onQposIdResult: (result) => {
-    console.log({ internalPosId: result });
-    const props = getProps();
-    resolveStackQueue(props.promises, result.posId, "getQposId");
-  },
-  onRequestNoQposDetected: () => {
-    console.log("Internal No POS detected");
-    const props = getProps();
-    resolveStackQueue(props.promises, null, "getQposId");
-  },
-  onRequestSetAmount: () => {
-    console.log("onRequestSetAmount");
-    const props = getProps();
-    const amountOptions = props.amountOptions;
-    if (!amountOptions) {
-      resolveStackQueue(props.promises, false, "requestSetAmount");
-      return;
-    }
-    PosService.setAmount(
-      amountOptions.amount,
-      amountOptions.cashbackAmount,
-      amountOptions.currencyCode,
-      amountOptions.transactionType
-    );
-    resolveStackQueue(props.promises, true, "requestSetAmount");
-    props.amountOptions = undefined;
-  },
-  onRequestQposConnected: () => {
-    const props = getProps();
-    props.posStatus = PosStatus.CONNECTED;
-  },
-});
+import QPOSListennerManager from "./listeners";
+import getInternalListeners from "./listeners/internals";
+import { createStackEnviroment, finishStackQueue } from "./props";
 
 const ERROR_MESSAGES = {
   NO_POS_INITIALIZATED: "POS has no initializated",
@@ -94,35 +27,54 @@ const ERROR_MESSAGES = {
 };
 
 class QPOSServiceClass {
-  private props: QPOSProps;
-  private listeners: Partial<QPOSListenners>;
-  private internalListeners: Partial<QPOSListenners>;
-  private hasListenersMerged: boolean;
+  private props!: QPOSProps;
+  private listeners!: QPOSListenners;
+  private internalListeners!: QPOSListenners;
+  private QPOSSuscriptions!: Suscribers;
 
   constructor() {
-    this.props = INITIAL_PROPS;
-    this.internalListeners = getInternalListeners(this.getProps.bind(this));
-    this.listeners = this.internalListeners;
-    this.hasListenersMerged = false;
+    this._init();
   }
 
+  private _init = () => {
+    this.props = {
+      promises: createStackEnviroment<QPOSPromise[]>([]),
+      listeners: createStackEnviroment<QPOSListenner[]>([]),
+      posStatus: PosStatus.OFF,
+      mode: CommunicationMode.BLUETOOTH,
+    };
+    this.internalListeners = getInternalListeners(this.getProps.bind(this));
+    this.listeners = this.internalListeners;
+    this.QPOSSuscriptions = {};
+  };
+
+  public addPosListeners = (listenners: QPOSListenners) => {
+    this.mergeListeners(listenners);
+    this.QPOSSuscriptions = QPOSListennerManager.addListenners(this.listeners);
+  };
+
+  public removePosListeners = () => {
+    QPOSListennerManager.removeEventListenners(this.QPOSSuscriptions);
+    this.listeners = this.internalListeners;
+    this.props.listeners.remove();
+  };
+
   /**Merge Context listeners with internal instance´s listeners */
-  public mergeListeners = (_listeners: Partial<QPOSListenners>) => {
+  private mergeListeners = (listenners: QPOSListenners) => {
     this.listeners = Utils.mapObject(
       this.internalListeners,
       (cb, key) =>
         (...args: any[]) => {
           /* @ts-ignore */
           if (cb) cb(...(args || []));
-          if (_listeners[key])
+          if (listenners[key])
             /* @ts-ignore */
-            _listeners[key](...(args || []));
+            listenners[key](...(args || []));
         }
     );
-    this.hasListenersMerged = true;
   };
 
-  public getListeners() {
+  public getListeners(): QPOSListenners {
     return this.listeners;
   }
 
@@ -149,25 +101,95 @@ class QPOSServiceClass {
     return this.props.posStatus;
   };
 
-  initPosService = (mode: CommunicationMode, amountOptions: AmountOptions) =>
-    new Promise<void>((resolve, reject) => {
-      if (this.props.posStatus === PosStatus.INITIALIZATED) {
-        reject(ERROR_MESSAGES.ALREADY_INITIALIZATED);
-        return;
-      }
-      if (!this.hasListenersMerged) {
-        console.warn(ERROR_MESSAGES.LISTENERS_NOT_MERGED);
-      }
-      //wait for resolve onRequestSetAmount() listener
-      this.setAmountAsync(amountOptions).then((result) => {
-        if (result) resolve();
-        else reject(ERROR_MESSAGES.NO_POS_INITIALIZATED);
-      });
-      //Create a POS service Instance in the Native Project
-      const success = PosService.initPosService(mode);
-      if (success) this.props.posStatus = PosStatus.INITIALIZATED;
-      else reject(ERROR_MESSAGES.NO_INSTANCE_CREATED);
+  public resetPosService = () => {
+    PosService.resetPosService();
+    this._init();
+  };
+
+  initPosService = (mode: CommunicationMode) => {
+    if (this.props.posStatus === PosStatus.INITIALIZATED) {
+      throw new Error(ERROR_MESSAGES.ALREADY_INITIALIZATED);
+    }
+    if (this.listeners === this.internalListeners) {
+      console.warn(ERROR_MESSAGES.LISTENERS_NOT_MERGED);
+    }
+    this.props.mode = mode;
+    //Create a POS service Instance in the Native Project
+    const success = PosService.initPosService(mode);
+    if (success) {
+      if (this.props.posStatus === PosStatus.CONNECTED) this.resetPosService();
+      this.props.posStatus = PosStatus.INITIALIZATED;
+    } else {
+      throw new Error(ERROR_MESSAGES.NO_INSTANCE_CREATED);
+    }
+  };
+
+  public connectBluetoothDevice(blueToothAddress: string) {
+    if (this.props.posStatus !== PosStatus.INITIALIZATED) {
+      throw new Error(ERROR_MESSAGES.NO_POS_INITIALIZATED);
+    }
+    if (this.props.mode !== CommunicationMode.BLUETOOTH) {
+      throw new Error("Comunication mode not defined as BLUETOOTH");
+    }
+    PosService.connectBluetoothDevice(true, 25, blueToothAddress);
+  }
+
+  public doTrade = (timeout: number) => {
+    PosService.doTrade(0, timeout);
+  };
+
+  public setAmount = (
+    amount: string,
+    cashbackAmount: string,
+    currencyCode: string,
+    transactionType: TransactionType
+  ) => {
+    PosService.setAmount(amount, cashbackAmount, currencyCode, transactionType);
+  };
+
+  public stopScan = () => {
+    PosService.stopScanQPos2Mode();
+  };
+
+  public addEventListener = <K extends QPOSListenerTag>(
+    event: K,
+    listener: QPOSEventType[K]
+  ) => {
+    this.props.listeners.set({
+      listener,
+      tag: event,
     });
+  };
+
+  public connect = (timeout: number) => {
+    if (this.props.posStatus !== PosStatus.INITIALIZATED) {
+      throw new Error(ERROR_MESSAGES.NO_POS_INITIALIZATED);
+    }
+    if (this.props.mode === null) {
+      throw new Error(ERROR_MESSAGES.NO_POS_INITIALIZATED);
+    }
+    switch (this.props.mode) {
+      case CommunicationMode.BLUETOOTH:
+        const bluethootStatus = PosService.getBluetoothState();
+        if (bluethootStatus) {
+          finishStackQueue(
+            this.props.listeners,
+            (el) => el.listener(true),
+            "onBTConnected"
+          );
+          this.doTrade(20);
+        } else {
+          const success = PosService.scanQPos2Mode(timeout);
+          if (!success)
+            throw new Error(
+              "Device has not bluethoot enabled or not have user permissions"
+            );
+        }
+        break;
+      default:
+        break;
+    }
+  };
 
   public closePosService = () => {
     PosService.closePosService();
@@ -182,7 +204,17 @@ class QPOSServiceClass {
     this.props.posStatus = PosStatus.OFF;
   };
 
-  public endPosService() {}
+  public getQposInfo = () => {
+    this.posStatusMiddleware();
+    return new Promise((resolve, reject) => {
+      PosService.getQposInfo();
+      this.props.promises.set({
+        tag: "getQposInfo",
+        resolve,
+        reject,
+      });
+    });
+  };
 
   public getQposId = () => {
     this.posStatusMiddleware();
@@ -195,55 +227,6 @@ class QPOSServiceClass {
       });
     });
   };
-
-  public doTrade = (timeout: number) => {};
-
-  public cancelTrade = () => {};
-
-  getUpdateCheckValue = () => {};
-  getKeyCheckValue = (
-    keyIndex: number,
-    checkvalue_keytype: CHECKVALUE_KEYTYPE
-  ) => {};
-  setMasterKey = (key: string, checkValue: string, keyIndex: number) => {};
-  updateWorkKey = (
-    pik: string,
-    pikCheck: string,
-    trk: string,
-    trkCheck: string,
-    mak: string,
-    makCheck: string
-  ) => {};
-  updateEMVConfigByXml = (xmlContent: string) => {};
-  updatePosFirmware = () => {};
-  getBluetoothState = () => {
-    return false;
-  };
-  public scanQPos2Mode = (timeout: number) => {};
-  startScanQposBLE = (timeout: number) => {};
-  stopScanQPos2Mode = () => {};
-  clearBluetoothBuffer = () => {};
-  disconnectBT = () => {};
-  public initService = () => {};
-  public closeService = () => {};
-  public trade = () => {};
-  setDeviceAddress = (address: string) => {};
-  openUart = () => {};
-  closeUart = () => {};
-  openUsb = () => {};
-  setD20Trade = (flag: boolean) => {};
-  getUpdateProgress = () => {
-    return 0;
-  };
-  setUsbSerialDriver = (driver: UsbOTGDriver) => {};
-  connectBluetoothDevice = (blueTootchAddress: string) => {};
-  getNFCBatchData = () => {
-    return {};
-  };
-  doEmvApp = () => {};
-  setCardTradeMode = (cardTradeMode: CardTradeMode) => {};
-  selectEmvApp = (position: number) => {};
-  cancelSelectEmvApp = () => {};
 }
 
 export default QPOSServiceClass;
