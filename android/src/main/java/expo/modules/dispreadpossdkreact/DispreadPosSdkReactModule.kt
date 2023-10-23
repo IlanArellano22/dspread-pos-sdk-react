@@ -62,8 +62,16 @@ class DispreadPosSdkReactModule : Module() {
       pos?.getQposId();
     }
 
+    Function("doEmvApp") {
+      pos?.doEmvApp(QPOSService.EmvOption.START);
+    }
+
     Function("getSdkVersion") {
       return@Function QPOSService.getSdkVersion();
+    }
+
+    Function("setCardTradeMode") { cardTradeMode: Int ->
+      pos?.setCardTradeMode(QPOSService.CardTradeMode.values()[cardTradeMode]);
     }
 
     Function("getUpdateCheckValue") {
@@ -86,8 +94,16 @@ class DispreadPosSdkReactModule : Module() {
       pos?.getQposInfo();
     }
 
+    Function("sendOnlineProcessResult") { tlv: String? ->
+      pos?.sendOnlineProcessResult(tlv);
+    }
+
     Function("doTrade") { keyIndex: Int, timeout: Int ->
       pos?.doTrade(keyIndex, timeout);
+    }
+
+    Function("getICCTag") { encryType: Int, cardType: Int, tagCount: Int, tagArrStr: String ->
+      return@Function pos?.getICCTag(QPOSService.EncryptType.values()[encryType], cardType, tagCount, tagArrStr);
     }
 
     Function("sendTime") { terminalTime: String ->
@@ -174,7 +190,9 @@ class DispreadPosSdkReactModule : Module() {
     override fun onReturnSpLogResult(data: String?) {}
 
     override fun onQposIdResult(posId: Hashtable<String?, String?>?) {
-
+      Log.d("Efevooo", "onQposIdResult()");
+      super.onQposIdResult(posId);
+      sendEvent("onQposIdResult", mapOf("info" to posId));
     }
 
     override fun onQposKsnResult(ksn: Hashtable<String?, String?>?) {}
@@ -240,13 +258,21 @@ class DispreadPosSdkReactModule : Module() {
       sendEvent("onRequestSetAmount");
     }
 
-    override fun onRequestSelectEmvApp(appList: ArrayList<String?>?) {}
+    override fun onRequestSelectEmvApp(appList: ArrayList<String?>?) {
+      Log.d("Efevooo", "onRequestSelectEmvApp()");
+      super.onRequestSelectEmvApp(appList);
+      sendEvent("onRequestSelectEmvApp", mapOf("appList" to appList));
+    }
 
     override fun onRequestIsServerConnected() {}
 
     override fun onRequestFinalConfirm() {}
 
-    override fun onRequestOnlineProcess(tlv: String?) {}
+    override fun onRequestOnlineProcess(tlv: String?) {
+      Log.d("Efevooo", "onRequestOnlineProcess()");
+      super.onRequestOnlineProcess(tlv);
+      sendEvent("onRequestOnlineProcess", mapOf("tlv" to tlv));
+    }
 
     override fun onRequestTime() {
       Log.d("Efevooo", "onRequestTime()");
@@ -254,7 +280,11 @@ class DispreadPosSdkReactModule : Module() {
       sendEvent("onRequestTime");
     }
 
-    override fun onRequestTransactionResult(transactionResult: TransactionResult?) {}
+    override fun onRequestTransactionResult(transactionResult: TransactionResult?) {
+      Log.d("Efevooo", "onRequestTransactionResult()");
+      super.onRequestTransactionResult(transactionResult);
+      sendEvent("onRequestTransactionResult", mapOf("transactionResult" to transactionResult?.ordinal));
+    }
 
     override fun onRequestTransactionLog(tlv: String?) {}
 
@@ -265,7 +295,10 @@ class DispreadPosSdkReactModule : Module() {
       sendEvent("onRequestQposConnected");
     }
 
-    override fun onRequestQposDisconnected() {}
+    override fun onRequestQposDisconnected() {
+      super.onRequestQposConnected();
+      sendEvent("onRequestQposConnected");
+    }
 
     override fun onRequestNoQposDetected() {
       super.onRequestNoQposDetected();
@@ -279,7 +312,7 @@ class DispreadPosSdkReactModule : Module() {
       super.onError(errorState);
       Log.d("Efevooo", "onError: $errorState");
       sendEvent("onError", mapOf(
-              "value" to 0
+              "errorState" to errorState?.ordinal
       ));
     }
 
@@ -287,7 +320,7 @@ class DispreadPosSdkReactModule : Module() {
       super.onRequestDisplay(displayMsg);
       Log.d("Efevooo", "onRequestDisplay: $displayMsg");
       sendEvent("onRequestDisplay", mapOf(
-              "value" to 0
+              "displayMsg" to displayMsg?.ordinal
       ));
     }
 

@@ -3,9 +3,8 @@ import {
   QPOSPromiseTag,
   QPOSStack,
   RemoveResult,
-  StackEnviroment,
 } from "../../types/QPOS";
-import { SingleElement } from "../../types/utils";
+import { SingleElement, StackEnviroment } from "../../types/utils";
 import Utils from "../../utils";
 
 const setPropByStack = <T extends Map<any, any>[]>(
@@ -63,7 +62,7 @@ export const finishStackQueue = <T extends any[]>(
 ) => {
   const predicate = tag && ((it: SingleElement<T>) => it.tag === tag);
   const el = stack.get(predicate);
-  el.forEach(execute);
+  if (el) el.forEach(execute);
   stack.remove(predicate);
 };
 
@@ -106,6 +105,12 @@ export const createStackEnviroment = <T extends { [key: string]: any }[]>(
     remove: (predicate) => {
       const mapPredicate = ObjPredicateToMapPredicate(predicate);
       removeProp(internalValue, stackId, mapPredicate);
+    },
+    hasAny: (predicate) => {
+      const mapPredicate = ObjPredicateToMapPredicate(predicate);
+      return mapPredicate
+        ? internalValue.some(mapPredicate)
+        : internalValue.length > 0;
     },
   };
 };

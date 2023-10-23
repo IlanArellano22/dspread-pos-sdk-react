@@ -27,11 +27,9 @@ export default function PaymentScreen({
     () => ({
       onRequestQposConnected: () => {
         console.log("Component QPOS Connected");
-        pos.doTrade(20);
       },
       onRequestSetAmount: () => {
         console.log("onRequestSetAmount()");
-        pos.setAmount(amount.replace(".", ""), "", "156", transactionType);
       },
       onError: () => {
         console.log("An error has ocurr");
@@ -73,14 +71,28 @@ export default function PaymentScreen({
     pos.addEventListener("onBTConnected", onDeviceConnected);
     const permission = await requestBLEPermissions();
     if (permission) {
-      pos.connect(20);
+      const success = await pos.connect(20);
+      console.log({ success });
+      if (success) {
+        const result = await pos.trade(60, {
+          amount: amount.replace(".", ""),
+          cashbackAmount: "",
+          currencyCode: "156",
+          transactionType,
+        });
+        console.log({ result });
+      }
     }
 
     return () => {
-      pos.removePosListeners();
       pos.resetPosService();
     };
   }, []);
+
+  const onQPOSInfo = async () => {
+    const info = await pos.getQposId();
+    console.log({ info });
+  };
 
   return (
     <View style={styles.main}>
@@ -101,7 +113,7 @@ export default function PaymentScreen({
         </View>
       </View>
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.cancelButton}>
+        <TouchableOpacity onPress={onQPOSInfo} style={styles.cancelButton}>
           <Text style={styles.cancelButtonText}>Cancelar</Text>
         </TouchableOpacity>
       </View>

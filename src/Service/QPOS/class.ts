@@ -2,6 +2,8 @@ import { CommunicationMode } from "../..";
 import PosService from "../../module/QPOS";
 import {
   AmountOptions,
+  CardTradeMode,
+  DecodeData,
   PosStatus,
   QPOSEventType,
   QPOSListenerTag,
@@ -10,7 +12,9 @@ import {
   QPOSPromise,
   QPOSProps,
   Suscribers,
+  TradeResult,
   TransactionType,
+  DoTradeResult,
 } from "../../types/QPOS";
 import Utils from "../../utils";
 import QPOSListennerManager from "./listeners";
@@ -53,7 +57,7 @@ class QPOSServiceClass {
     this.QPOSSuscriptions = QPOSListennerManager.addListenners(this.listeners);
   };
 
-  public removePosListeners = () => {
+  private removePosListeners = () => {
     QPOSListennerManager.removeEventListenners(this.QPOSSuscriptions);
     this.listeners = this.internalListeners;
     this.props.listeners.remove();
@@ -87,22 +91,13 @@ class QPOSServiceClass {
       throw new Error(ERROR_MESSAGES.NO_POS_CONNECTED);
   };
 
-  private setAmountAsync = (amountOptions: AmountOptions) =>
-    new Promise<boolean>((resolve, reject) => {
-      this.props.amountOptions = amountOptions;
-      this.props.promises.set({
-        tag: "requestSetAmount",
-        resolve,
-        reject,
-      });
-    });
-
   public getPosStatus = () => {
     return this.props.posStatus;
   };
 
   public resetPosService = () => {
     PosService.resetPosService();
+    this.removePosListeners();
     this._init();
   };
 
@@ -134,17 +129,95 @@ class QPOSServiceClass {
     PosService.connectBluetoothDevice(true, 25, blueToothAddress);
   }
 
-  public doTrade = (timeout: number) => {
-    PosService.doTrade(0, timeout);
+  private setAmountImpl = (amountOptions: AmountOptions) =>
+    new Promise<boolean>((resolve, reject) => {
+      this.props.amountOptions = amountOptions;
+      this.props.promises.set({
+        tag: "requestSetAmount",
+        resolve,
+        reject,
+      });
+    });
+
+  private doTradeImpl = (
+    timeout: number,
+    amountOptions: AmountOptions
+  ): Promise<TradeResult> => {
+    return new Promise(async (resolve, reject) => {
+      this.props.promises.set({
+        tag: "doTrade",
+        resolve,
+        reject,
+      });
+      PosService.doTrade(0, timeout);
+      const amountSuccess = await this.setAmountImpl(amountOptions);
+      if (!amountSuccess) reject("unknown ERROR");
+      console.log("---TRADE END---");
+    });
   };
 
-  public setAmount = (
-    amount: string,
-    cashbackAmount: string,
-    currencyCode: string,
-    transactionType: TransactionType
-  ) => {
-    PosService.setAmount(amount, cashbackAmount, currencyCode, transactionType);
+  private doEmvAppImpl = () => {
+    return new Promise<any>((resolve, reject) => {
+      this.props.promises.set({
+        tag: "doEmvApp",
+        resolve,
+        reject,
+      });
+      PosService.doEmvApp();
+    });
+  };
+
+  private processTrade = async (
+    timeout: number,
+    amountOptions: AmountOptions
+  ): Promise<TradeResult> => {
+    const doTradeResult = await this.doTradeImpl(timeout, amountOptions);
+
+    switch (doTradeResult.result) {
+      case DoTradeResult.ICC:
+        await this.doEmvAppImpl();
+        return {
+          result: doTradeResult.result,
+          decodeData: {
+            cardholderName: "",
+            encPAN: "",
+            encTrack1: "",
+            encTrack2: "",
+            encTrack3: "",
+            encTracks: "",
+            expiryDate: "",
+            formatID: "",
+            hashPan: "",
+            maskedPAN: "",
+            newPin: "",
+            partialTrack: "",
+            pinBlock: "",
+            pinKsn: "",
+            pinRandomNumber: "",
+            psamNo: "",
+            serviceCode: "",
+            track1Length: "",
+            track2Length: "",
+            track3Length: "",
+            trackksn: "",
+            trackRandomNumber: "",
+          },
+        };
+      default:
+        return doTradeResult;
+    }
+  };
+
+  public trade = async (
+    timeout: number,
+    amountOptions: AmountOptions,
+    cardTradeMode?: CardTradeMode
+  ): Promise<TradeResult> => {
+    this.posStatusMiddleware();
+    PosService.setCardTradeMode(
+      cardTradeMode ?? CardTradeMode.SWIPE_INSERT_CARD_UNALLOWED_LOW_TRADE
+    );
+    return await this.processTrade(timeout, amountOptions);
   };
 
   public stopScan = () => {
@@ -162,33 +235,42 @@ class QPOSServiceClass {
   };
 
   public connect = (timeout: number) => {
-    if (this.props.posStatus !== PosStatus.INITIALIZATED) {
-      throw new Error(ERROR_MESSAGES.NO_POS_INITIALIZATED);
-    }
-    if (this.props.mode === null) {
-      throw new Error(ERROR_MESSAGES.NO_POS_INITIALIZATED);
-    }
-    switch (this.props.mode) {
-      case CommunicationMode.BLUETOOTH:
-        const bluethootStatus = PosService.getBluetoothState();
-        if (bluethootStatus) {
-          finishStackQueue(
-            this.props.listeners,
-            (el) => el.listener(true),
-            "onBTConnected"
-          );
-          this.doTrade(20);
-        } else {
-          const success = PosService.scanQPos2Mode(timeout);
-          if (!success)
-            throw new Error(
-              "Device has not bluethoot enabled or not have user permissions"
+    return new Promise((resolve, reject) => {
+      if (this.props.posStatus !== PosStatus.INITIALIZATED) {
+        reject(ERROR_MESSAGES.NO_POS_INITIALIZATED);
+      }
+      if (this.props.mode === null) {
+        reject(ERROR_MESSAGES.NO_POS_INITIALIZATED);
+      }
+      switch (this.props.mode) {
+        case CommunicationMode.BLUETOOTH:
+          const bluethootStatus = PosService.getBluetoothState();
+          if (bluethootStatus) {
+            this.props.posStatus = PosStatus.CONNECTED;
+            resolve(bluethootStatus);
+            finishStackQueue(
+              this.props.listeners,
+              (el) => el.listener(true),
+              "onBTConnected"
             );
-        }
-        break;
-      default:
-        break;
-    }
+          } else {
+            const success = PosService.scanQPos2Mode(timeout);
+            if (!success)
+              reject(
+                "Device has not bluethoot enabled or not have user permissions"
+              );
+            else
+              this.props.promises.set({
+                tag: "connect",
+                resolve,
+                reject,
+              });
+          }
+          break;
+        default:
+          break;
+      }
+    });
   };
 
   public closePosService = () => {
@@ -207,24 +289,24 @@ class QPOSServiceClass {
   public getQposInfo = () => {
     this.posStatusMiddleware();
     return new Promise((resolve, reject) => {
-      PosService.getQposInfo();
       this.props.promises.set({
         tag: "getQposInfo",
         resolve,
         reject,
       });
+      PosService.getQposInfo();
     });
   };
 
   public getQposId = () => {
     this.posStatusMiddleware();
     return new Promise<string | null>((resolve, reject) => {
-      PosService.getQposId();
       this.props.promises.set({
         tag: "getQposId",
         resolve,
         reject,
       });
+      PosService.getQposId();
     });
   };
 }

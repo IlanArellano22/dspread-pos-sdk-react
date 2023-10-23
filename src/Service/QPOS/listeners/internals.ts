@@ -1,35 +1,43 @@
 import PosService from "../../../module/QPOS";
 import {
   CommunicationMode,
+  EncryptType,
+  Error,
   PosStatus,
   QPOSListenners,
   QPOSProps,
+  TransactionResult,
 } from "../../../types/QPOS";
-import { finishStackQueue, resolveStackQueue } from "../props";
+import {
+  finishStackQueue,
+  rejectStackQueue,
+  resolveStackQueue,
+} from "../props";
 
-const POSTimeFormat = (fecha: Date) => {
-  const year = fecha.getFullYear();
-  const month = String(fecha.getMonth() + 1).padStart(2, "0");
-  const day = String(fecha.getDate()).padStart(2, "0");
-  const hours = String(fecha.getHours()).padStart(2, "0");
-  const minutes = String(fecha.getMinutes()).padStart(2, "0");
-  const seconds = String(fecha.getSeconds()).padStart(2, "0");
+const POSTimeFormat = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
 
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
 };
 
 const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
-  onQposIdResult: (result) => {
-    console.log({ internalPosId: result });
+  onQposIdResult: ({ info }) => {
     const props = getProps();
-    resolveStackQueue(props.promises, result.posId, "getQposId");
+    resolveStackQueue(props.promises, info, "getQposId");
   },
   onRequestNoQposDetected: () => {
     console.log("Internal No POS detected");
     const props = getProps();
     resolveStackQueue(props.promises, null, "getQposId");
+    resolveStackQueue(props.promises, false, "connect");
   },
   onRequestSetAmount: () => {
+    console.log("INTERNAL_SET_AMOUNT");
     const props = getProps();
     const amountOptions = props.amountOptions;
     if (!amountOptions) {
@@ -42,7 +50,6 @@ const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
       amountOptions.currencyCode,
       amountOptions.transactionType
     );
-    resolveStackQueue(props.promises, true, "requestSetAmount");
     props.amountOptions = undefined;
   },
   onRequestQposConnected: () => {
@@ -55,7 +62,11 @@ const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
         (el) => el.listener(null),
         "onBTConnected"
       );
+      resolveStackQueue(props.promises, true, "connect");
     }
+  },
+  onRequestQposDisconnected: () => {
+    console.log("QPOS DISCONNECTED");
   },
   onDeviceFound: ({ device }) => {
     const props = getProps();
@@ -67,21 +78,103 @@ const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
     PosService.sendTime(POSTimeFormat(new Date()));
   },
   onRequestWaitingUser: () => {
+    const props = getProps();
     console.log("onRequestWaitingUser()");
+    resolveStackQueue(props.promises, true, "requestSetAmount");
   },
-  onRequestDisplay: (display) => {
-    console.log("onRequestDisplay()");
+  onRequestDisplay: ({ displayMsg }) => {
+    console.log("onRequestDisplay()", displayMsg);
   },
   onRequestDeviceScanFinished: () => {
     console.log("onRequestDeviceScanFinished()");
   },
-  onDoTradeResult: (result) => {
-    console.log("onDoTradeResult()", result);
+  onRequestTransactionResult: ({ transactionResult }) => {
+    console.log("onRequestTransactionResult()", transactionResult);
+    const props = getProps();
+    switch (transactionResult) {
+      case TransactionResult.APPROVED:
+        const info = PosService.getICCTag(EncryptType.PLAINTEXT, 1, 1, "5A");
+        console.log({ info });
+        resolveStackQueue(props.promises, true, "doEmvApp");
+        break;
+    }
   },
-  onQposInfoResult: (posInfoData) => {
+  onRequestOnlineProcess: ({ tlv }) => {
+    console.log("onRequestOnlineProcess()");
+    PosService.sendOnlineProcessResult("8A023030");
+  },
+  onDoTradeResult: (result) => {
+    console.log("INTERNAL_TRADE_RESULT");
+    const props = getProps();
+    resolveStackQueue(props.promises, result, "doTrade");
+  },
+  onQposInfoResult: ({ posInfoData }) => {
     console.log("onQposInfoResult()", posInfoData);
     const props = getProps();
     resolveStackQueue(props.promises, posInfoData, "getQposInfo");
+  },
+  onRequestSelectEmvApp: (res) => {
+    console.log("onRequestSelectEmvApp()", res);
+  },
+  onError: ({ errorState }) => {
+    console.log({ errorState });
+    const props = getProps();
+    switch (errorState) {
+      case Error.INPUT_INVALID_FORMAT:
+        rejectStackQueue(props.promises, "INVALID FORMAT", "requestSetAmount");
+        rejectStackQueue(props.promises, "INVALID FORMAT", "doTrade");
+        break;
+      case Error.AMOUNT_OUT_OF_LIMIT:
+        break;
+      case Error.APDU_ERROR:
+        break;
+      case Error.APP_SELECT_TIMEOUT:
+        break;
+      case Error.CASHBACK_NOT_SUPPORTED:
+        break;
+      case Error.CMD_NOT_AVAILABLE:
+        break;
+      case Error.CMD_TIMEOUT:
+        break;
+      case Error.COMM_ERROR:
+        break;
+      case Error.CRC_ERROR:
+        break;
+      case Error.DEVICE_BUSY:
+        break;
+      case Error.DEVICE_IN_BOOT_STATE:
+        break;
+      case Error.DEVICE_IN_BOOT_STATE:
+        break;
+      case Error.DEVICE_RESET:
+        break;
+      case Error.EMV_APP_CFG_ERROR:
+        break;
+      case Error.EMV_CAPK_CFG_ERROR:
+        break;
+      case Error.EXPIRED_CERT:
+        break;
+      case Error.ICC_EXISTS_ERROR:
+        break;
+      case Error.ICC_ONLINE_TIMEOUT:
+        break;
+      case Error.INPUT_INVALID:
+        break;
+      case Error.INPUT_OUT_OF_RANGE:
+        break;
+      case Error.INPUT_ZERO_VALUES:
+        break;
+      case Error.INVALID_TRUSTED_CERT:
+        break;
+      case Error.MAC_ERROR:
+        break;
+      case Error.TIMEOUT:
+        break;
+      case Error.UNKNOWN:
+        break;
+      case Error.WR_DATA_ERROR:
+        break;
+    }
   },
 });
 

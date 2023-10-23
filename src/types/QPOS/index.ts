@@ -1,5 +1,5 @@
 import { Subscription } from "expo-modules-core";
-import { SingleElement } from "../utils";
+import { StackEnviroment } from "../utils";
 
 type DecodeDataKeys =
   | "cardholderName"
@@ -26,6 +26,49 @@ type DecodeDataKeys =
   | "trackksn";
 
 export type DecodeData = Record<DecodeDataKeys, string>;
+
+type QPOSInfoKeys =
+  | "Manufacturere"
+  | "ModelInfor"
+  | "OTAversion"
+  | "PCI_firmwareVersion"
+  | "PCI_hardwareVersion"
+  | "SUB"
+  | "Voltage"
+  | "batteryLevel"
+  | "batteryPercentage"
+  | "bootloaderVersion"
+  | "compileTime"
+  | "firmwareVersion"
+  | "hardwareVersion"
+  | "isCharging"
+  | "isKeyboard"
+  | "isSupportedTrack1"
+  | "isSupportedTrack2"
+  | "isSupportedTrack3"
+  | "isUsbConnected"
+  | "updateWorkKeyFlag";
+
+export type QPOSInfo = Record<QPOSInfoKeys, string>;
+
+export type QPOSIdKeys =
+  | "csn"
+  | "deviceNumber"
+  | "isKeyboard"
+  | "macAddress"
+  | "merchantId"
+  | "nfcID"
+  | "posId"
+  | "psamId"
+  | "psamNo"
+  | "tmk0Status"
+  | "tmk1Status"
+  | "tmk2Status"
+  | "tmk3Status"
+  | "tmk4Status"
+  | "vendorCode";
+
+export type QPOSId = Record<QPOSIdKeys, string>;
 
 export type ChangeEventPayload = {
   value: string;
@@ -269,6 +312,11 @@ export enum TransactionType {
   MINI_STATEMENT,
 }
 
+export enum EncryptType {
+  ENCRYPTED,
+  PLAINTEXT,
+}
+
 export interface QPOSService {
   getQposId: () => void;
   getQposInfo: () => void;
@@ -315,6 +363,12 @@ export interface QPOSService {
   selectEmvApp: (position: number) => void;
   cancelSelectEmvApp: () => void;
   pinMapSync: (value: string, timeout: number) => void;
+  getICCTag: (
+    encryType: EncryptType,
+    cardType: number,
+    tagCount: number,
+    tagArrStr: string
+  ) => Record<string, string>;
   setAmount: (
     amount: string,
     cashbackAmount: string,
@@ -343,6 +397,7 @@ export type Suscribers = Partial<Record<keyof QPOSListenners, Subscription>>;
 export interface QPOSPromise extends QPOSStack<QPOSPromiseTag> {
   resolve: (value: any | PromiseLike<any>) => void;
   reject: (reason?: any) => void;
+  props?: { [key: string]: any };
 }
 
 export interface QPOSListenner extends QPOSStack<QPOSListenerTag> {
@@ -352,6 +407,7 @@ export interface QPOSListenner extends QPOSStack<QPOSListenerTag> {
 export type QPOSEventType = {
   onBTConnect: (device: BluetoothDevice) => void;
   onBTConnected: (existing: boolean) => void;
+  onWaitingUser: () => void;
 };
 
 export enum PosStatus {
@@ -362,9 +418,15 @@ export enum PosStatus {
   TERMINATED,
 }
 
-export type QPOSPromiseTag = "getQposId" | "requestSetAmount" | "getQposInfo";
+export type QPOSPromiseTag =
+  | "getQposId"
+  | "requestSetAmount"
+  | "getQposInfo"
+  | "doTrade"
+  | "connect"
+  | "doEmvApp";
 
-export type QPOSListenerTag = "onBTConnect" | "onBTConnected";
+export type QPOSListenerTag = "onBTConnect" | "onBTConnected" | "onWaitingUser";
 
 export interface QPOSStack<ITag> {
   /**Thats the internal id for this queue stack */
@@ -377,12 +439,6 @@ export enum RemoveResult {
   SINGLE,
   MULTIPLE,
   ALL,
-}
-
-export interface StackEnviroment<T extends { [key: string]: any }[]> {
-  get: (predicate?: (el: SingleElement<T>) => boolean) => T;
-  set: (newValue: Omit<SingleElement<T>, "stackId">) => void;
-  remove: (predicate?: (el: SingleElement<T>) => boolean) => void;
 }
 
 export interface QPOSProps {
@@ -398,6 +454,11 @@ export interface AmountOptions {
   cashbackAmount: string;
   currencyCode: string;
   transactionType: TransactionType;
+}
+
+export interface TradeResult {
+  result: DoTradeResult;
+  decodeData: DecodeData;
 }
 
 interface Listenners {
@@ -441,7 +502,7 @@ interface Listenners {
 
   onReturnSpLogResult: (data: string) => void;
 
-  onQposIdResult: (posId: Record<string, string>) => void;
+  onQposIdResult: (data: { info: QPOSId }) => void;
 
   onQposKsnResult: (ksn: Record<string, string>) => void;
 
@@ -449,7 +510,7 @@ interface Listenners {
 
   onRequestDeviceScanFinished: () => void;
 
-  onQposInfoResult: (posInfoData: Record<string, string>) => void;
+  onQposInfoResult: (data: { posInfoData: QPOSInfo }) => void;
 
   onQposTestResult: (testResultData: Record<string, string>) => void;
 
@@ -471,10 +532,7 @@ interface Listenners {
     cardData: Record<string, string[]>
   ) => void;
 
-  onDoTradeResult: (data: {
-    result: DoTradeResult;
-    decodeData: DecodeData;
-  }) => void;
+  onDoTradeResult: (data: TradeResult) => void;
 
   onFinishMifareCardResult: (flag: boolean) => void;
 
@@ -506,11 +564,13 @@ interface Listenners {
 
   onRequestFinalConfirm: () => void;
 
-  onRequestOnlineProcess: (tlv: string) => void;
+  onRequestOnlineProcess: (data: { tlv: string }) => void;
 
   onRequestTime: () => void;
 
-  onRequestTransactionResult: (transactionResult: TransactionResult) => void;
+  onRequestTransactionResult: (data: {
+    transactionResult: TransactionResult;
+  }) => void;
 
   onRequestTransactionLog: (tlv: string) => void;
 
@@ -524,9 +584,9 @@ interface Listenners {
 
   onRequestNoQposDetectedUnbond: () => void;
 
-  onError: (errorState: Error) => void;
+  onError: (data: { errorState: Error }) => void;
 
-  onRequestDisplay: (displayMsg: Display) => void;
+  onRequestDisplay: (data: { displayMsg: Display }) => void;
 
   onDeviceFound: (device: { device: BluetoothDevice }) => void;
 
