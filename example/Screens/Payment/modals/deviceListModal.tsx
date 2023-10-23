@@ -3,7 +3,7 @@ import { FlatList, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { ViewProps } from "@ihaz/react-ui-utils/lib/manager/View/comp";
 import ModalBase from "../../../components/Manager/modalBase";
 import { HandleEvents } from "@ihaz/react-ui-utils/lib/hooks/useEventHandler";
-import { BluetoothDevice } from "dispread-pos-sdk-react";
+import { BluetoothDevice } from "dspread-pos-sdk-react";
 
 interface DeviceListModalProps extends ViewProps<BluetoothDevice | null> {
   event: HandleEvents<"deviceChange", BluetoothDevice>;

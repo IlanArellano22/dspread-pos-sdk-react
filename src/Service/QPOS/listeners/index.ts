@@ -4,7 +4,7 @@ import { QPOSListenners, Suscribers } from "../../../types/QPOS";
 
 namespace QPOSListennerManager {
   const emitter = new EventEmitter(
-    PosService ?? NativeModulesProxy.DispreadPosSdkReact
+    PosService ?? NativeModulesProxy.DspreadPosSdkReact
   );
 
   export function addListenners(listenners: QPOSListenners): Suscribers {

@@ -1,5 +1,5 @@
 import { LinkingOptions } from "@react-navigation/native";
-import { TransactionType } from "dispread-pos-sdk-react";
+import { TransactionType } from "dspread-pos-sdk-react";
 
 export type RootStackParamList = {
   Amount: undefined;

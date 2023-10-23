@@ -1,4 +1,4 @@
-package expo.contants.dispreadconstants
+package expo.contants.dspreadconstants
 
 class Constants {
     companion object {

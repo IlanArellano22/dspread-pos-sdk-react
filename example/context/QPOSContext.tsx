@@ -1,5 +1,5 @@
 import React, { createContext, PropsWithChildren, useMemo } from "react";
-import { QPOSServiceClass } from "dispread-pos-sdk-react";
+import { QPOSServiceClass } from "dspread-pos-sdk-react";
 
 interface IQPOSContext {
   pos: QPOSServiceClass;

@@ -1,7 +1,7 @@
 {
-  "name": "dispread-pos-sdk-react",
+  "name": "dspread-pos-sdk-react",
   "version": "0.1.0",
-  "description": "Disprad Pos SDK for React Native",
+  "description": "Dspread Pos SDK for React Native",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
@@ -18,16 +18,16 @@
   "keywords": [
     "react-native",
     "expo",
-    "dispread-pos-sdk-react",
-    "DispreadPosSdkReact"
+    "dspread-pos-sdk-react",
+    "DspreadPosSdkReact"
   ],
-  "repository": "https://github.com/IlanArellano22/dispread-pos-sdk-react",
+  "repository": "https://github.com/IlanArellano22/dspread-pos-sdk-react",
   "bugs": {
-    "url": "https://github.com/IlanArellano22/dispread-pos-sdk-react/issues"
+    "url": "https://github.com/IlanArellano22/dspread-pos-sdk-react/issues"
   },
   "author": "IlanArellano22 <110840319+IlanArellano22@users.noreply.github.com> (https://github.com/IlanArellano22)",
   "license": "MIT",
-  "homepage": "https://github.com/IlanArellano22/dispread-pos-sdk-react#readme",
+  "homepage": "https://github.com/IlanArellano22/dspread-pos-sdk-react#readme",
   "dependencies": {},
   "devDependencies": {
     "@types/react": "^18.0.25",

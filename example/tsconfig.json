@@ -4,8 +4,8 @@
     "jsx": "react",
     "strict": true,
     "paths": {
-      "dispread-pos-sdk-react": ["../src/index"],
-      "dispread-pos-sdk-react/*": ["../src/*"]
+      "dspread-pos-sdk-react": ["../src/index"],
+      "dspread-pos-sdk-react/*": ["../src/*"]
     }
   }
 }

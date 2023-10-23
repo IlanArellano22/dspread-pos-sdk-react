@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "dispread-pos-sdk-react-example",
-    "slug": "dispread-pos-sdk-react-example",
+    "name": "dspread-pos-sdk-react-example",
+    "slug": "dspread-pos-sdk-react-example",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,27 +11,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "plugins": [
-      [
-        "@config-plugins/react-native-ble-plx",
-        {
-          "isBackgroundEnabled": true,
-          "modes": ["peripheral", "central"],
-          "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to bluetooth devices"
-        }
-      ]
-    ],
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "expo.modules.dispreadpossdkreact.example"
+      "bundleIdentifier": "expo.modules.dspreadpossdkreact.example"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "expo.modules.dispreadpossdkreact.example"
+      "package": "expo.modules.dspreadpossdkreact.example"
     },
     "web": {
       "favicon": "./assets/favicon.png"

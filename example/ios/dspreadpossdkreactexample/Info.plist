@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>dispread-pos-sdk-react-example</string>
+    <string>dspread-pos-sdk-react-example</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>expo.modules.dispreadpossdkreact.example</string>
+          <string>expo.modules.dspreadpossdkreact.example</string>
         </array>
       </dict>
     </array>
@@ -48,13 +48,6 @@
         </dict>
       </dict>
     </dict>
-    <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to connect to bluetooth devices</string>
-    <key>UIBackgroundModes</key>
-    <array>
-      <string>bluetooth-central</string>
-      <string>bluetooth-peripheral</string>
-    </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

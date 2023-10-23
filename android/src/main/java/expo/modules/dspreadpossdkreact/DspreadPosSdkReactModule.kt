@@ -1,4 +1,4 @@
-package expo.modules.dispreadpossdkreact
+package expo.modules.dspreadpossdkreact
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
@@ -18,7 +18,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import expo.service.QPOSManager
 import java.util.Hashtable
 
-class DispreadPosSdkReactModule : Module() {
+class DspreadPosSdkReactModule : Module() {
   private var pos: QPOSService? = null;
 
   fun _initPosService(): Boolean {
@@ -37,10 +37,10 @@ class DispreadPosSdkReactModule : Module() {
   }
 
   override fun definition() = ModuleDefinition {
-    Name("DispreadPosSdkReact")
+    Name("DspreadPosSdkReact")
 
 
-    Events(*expo.contants.dispreadconstants.Constants.getPOSEvents().toTypedArray())
+    Events(*expo.contants.dspreadconstants.Constants.getPOSEvents().toTypedArray())
 
     Function("initPosService") { mode: Int ->
       _initPosService();

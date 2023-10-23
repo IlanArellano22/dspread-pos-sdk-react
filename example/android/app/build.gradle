@@ -81,9 +81,9 @@ android {
 
     compileSdkVersion rootProject.ext.compileSdkVersion
 
-    namespace 'expo.modules.dispreadpossdkreact.example'
+    namespace 'expo.modules.dspreadpossdkreact.example'
     defaultConfig {
-        applicationId 'expo.modules.dispreadpossdkreact.example'
+        applicationId 'expo.modules.dspreadpossdkreact.example'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

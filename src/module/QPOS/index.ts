@@ -1,9 +1,9 @@
 import { requireNativeModule } from "expo-modules-core";
 import { NativeModule } from "react-native/types";
-import { DispreadPosModule } from "../../types/QPOS";
+import { DspreadPosModule } from "../../types/QPOS";
 
-const PosService = requireNativeModule<DispreadPosModule & NativeModule>(
-  "DispreadPosSdkReact"
+const PosService = requireNativeModule<DspreadPosModule & NativeModule>(
+  "DspreadPosSdkReact"
 );
 
 export default PosService;

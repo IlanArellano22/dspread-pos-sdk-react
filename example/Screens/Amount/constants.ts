@@ -1,4 +1,4 @@
-import { TransactionType } from "dispread-pos-sdk-react";
+import { TransactionType } from "dspread-pos-sdk-react";
 import { AmountButtonProps } from "./types";
 
 export const AmounButtons: AmountButtonProps<number>[][] = [

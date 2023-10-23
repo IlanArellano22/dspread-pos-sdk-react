@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'maven-publish'
 
-group = 'expo.modules.dispreadpossdkreact'
+group = 'expo.modules.dspreadpossdkreact'
 version = '0.1.0'
 
 buildscript {
@@ -62,7 +62,7 @@ android {
     jvmTarget = JavaVersion.VERSION_11.majorVersion
   }
 
-  namespace "expo.modules.dispreadpossdkreact"
+  namespace "expo.modules.dspreadpossdkreact"
   defaultConfig {
     minSdkVersion safeExtGet("minSdkVersion", 21)
     targetSdkVersion safeExtGet("targetSdkVersion", 33)

@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { ViewProps } from "@ihaz/react-ui-utils/lib/manager/View/comp";
-import { TransactionType } from "dispread-pos-sdk-react";
+import { TransactionType } from "dspread-pos-sdk-react";
 import { TRANSACTION_TYPES } from "../constants";
 import { AmountButtonProps } from "../types";
 import ModalBase from "../../../components/Manager/modalBase";

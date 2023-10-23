@@ -1,4 +1,4 @@
-package expo.modules.dispreadpossdkreact.example;
+package expo.modules.dspreadpossdkreact.example;
 
 import android.app.Application;
 import android.content.res.Configuration;

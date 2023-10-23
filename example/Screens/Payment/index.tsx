@@ -9,7 +9,7 @@ import {
   BluetoothDevice,
   CommunicationMode,
   QPOSListenners,
-} from "dispread-pos-sdk-react";
+} from "dspread-pos-sdk-react";
 import { useEffectAsync, useEventHandler } from "@ihaz/react-ui-utils";
 import modalManager from "../../components/Manager/modalManager";
 import DeviceListModal from "./modals/deviceListModal";
@@ -70,6 +70,7 @@ export default function PaymentScreen({
     pos.addEventListener("onBTConnect", searchDevices);
     pos.addEventListener("onBTConnected", onDeviceConnected);
     const permission = await requestBLEPermissions();
+    console.log({ permission });
     if (permission) {
       const success = await pos.connect(20);
       console.log({ success });

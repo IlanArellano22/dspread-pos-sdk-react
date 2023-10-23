@@ -74,7 +74,7 @@ export type ChangeEventPayload = {
   value: string;
 };
 
-export type DispreadPosSdkReactViewProps = {
+export type DspreadPosSdkReactViewProps = {
   name: string;
 };
 
@@ -89,7 +89,7 @@ export interface BluetoothDevice {
   bondState: number;
 }
 
-export interface DispreadPosModule extends QPOSService {
+export interface DspreadPosModule extends QPOSService {
   initPosService: (mode: CommunicationMode) => boolean;
   resetPosService: () => void;
   closePosService: () => void;
