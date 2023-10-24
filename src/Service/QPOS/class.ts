@@ -3,7 +3,6 @@ import PosService from "../../module/QPOS";
 import {
   AmountOptions,
   CardTradeMode,
-  DecodeData,
   PosStatus,
   QPOSEventType,
   QPOSListenerTag,
@@ -13,7 +12,6 @@ import {
   QPOSProps,
   Suscribers,
   TradeResult,
-  TransactionType,
   DoTradeResult,
 } from "../../types/QPOS";
 import Utils from "../../utils";
@@ -27,7 +25,7 @@ const ERROR_MESSAGES = {
   ALREADY_INITIALIZATED: "POS already initializated",
   NO_INSTANCE_CREATED: "An internal error has ocurred",
   LISTENERS_NOT_MERGED:
-    "Theres not any Context Listeners found to merge for suscribing to native events. POS service only work with internal listeners",
+    "Theres not any Context Listeners found to merge for suscribing to native events. POS service will only work with internal listeners",
 };
 
 class QPOSServiceClass {
@@ -54,13 +52,15 @@ class QPOSServiceClass {
 
   public addPosListeners = (listenners: QPOSListenners) => {
     this.mergeListeners(listenners);
-    this.QPOSSuscriptions = QPOSListennerManager.addListenners(this.listeners);
   };
 
   private removePosListeners = () => {
+    if (
+      !this.QPOSSuscriptions ||
+      JSON.stringify(this.QPOSSuscriptions) === "{}"
+    )
+      return;
     QPOSListennerManager.removeEventListenners(this.QPOSSuscriptions);
-    this.listeners = this.internalListeners;
-    this.props.listeners.remove();
   };
 
   /**Merge Context listeners with internal instance´s listeners */
@@ -101,12 +101,17 @@ class QPOSServiceClass {
     this._init();
   };
 
+  private emitPosListeners = () => {
+    if (this.listeners === this.internalListeners) {
+      console.warn(ERROR_MESSAGES.LISTENERS_NOT_MERGED);
+    }
+    this.removePosListeners();
+    this.QPOSSuscriptions = QPOSListennerManager.addListenners(this.listeners);
+  };
+
   initPosService = (mode: CommunicationMode) => {
     if (this.props.posStatus === PosStatus.INITIALIZATED) {
       throw new Error(ERROR_MESSAGES.ALREADY_INITIALIZATED);
-    }
-    if (this.listeners === this.internalListeners) {
-      console.warn(ERROR_MESSAGES.LISTENERS_NOT_MERGED);
     }
     this.props.mode = mode;
     //Create a POS service Instance in the Native Project
@@ -152,7 +157,6 @@ class QPOSServiceClass {
       PosService.doTrade(0, timeout);
       const amountSuccess = await this.setAmountImpl(amountOptions);
       if (!amountSuccess) reject("unknown ERROR");
-      console.log("---TRADE END---");
     });
   };
 
@@ -215,7 +219,8 @@ class QPOSServiceClass {
   ): Promise<TradeResult> => {
     this.posStatusMiddleware();
     PosService.setCardTradeMode(
-      cardTradeMode ?? CardTradeMode.SWIPE_INSERT_CARD_UNALLOWED_LOW_TRADE
+      cardTradeMode ??
+        CardTradeMode.SWIPE_TAP_INSERT_CARD_NOTUP_UNALLOWED_LOW_TRADE
     );
     return await this.processTrade(timeout, amountOptions);
   };
@@ -242,6 +247,7 @@ class QPOSServiceClass {
       if (this.props.mode === null) {
         reject(ERROR_MESSAGES.NO_POS_INITIALIZATED);
       }
+      this.emitPosListeners();
       switch (this.props.mode) {
         case CommunicationMode.BLUETOOTH:
           const bluethootStatus = PosService.getBluetoothState();

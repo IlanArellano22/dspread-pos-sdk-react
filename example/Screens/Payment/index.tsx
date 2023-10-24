@@ -9,17 +9,24 @@ import {
   BluetoothDevice,
   CommunicationMode,
   QPOSListenners,
+  TradeResult,
 } from "dspread-pos-sdk-react";
-import { useEffectAsync, useEventHandler } from "@ihaz/react-ui-utils";
+import {
+  useEffectAsync,
+  useEventHandler,
+  useValueHandler,
+} from "@ihaz/react-ui-utils";
 import modalManager from "../../components/Manager/modalManager";
 import DeviceListModal from "./modals/deviceListModal";
 import { requestBLEPermissions } from "../../services/permissions";
 
 export default function PaymentScreen({
   route,
+  navigation,
 }: RootStackScreenProps<"Payment">) {
   const { pos } = useContext(QPOSContext);
   const events = useEventHandler<"deviceChange", BluetoothDevice>();
+  const [isCancelled, setIsCancelled] = useValueHandler(false);
   const [showModal, setShowModal] = useState(false);
   const { amount, transactionType } = route.params;
 
@@ -52,6 +59,8 @@ export default function PaymentScreen({
     }, 500);
   };
 
+  const processResult = (result: TradeResult) => {};
+
   const onDeviceConnected = () => {
     console.log("deviceConnected");
   };
@@ -70,7 +79,6 @@ export default function PaymentScreen({
     pos.addEventListener("onBTConnect", searchDevices);
     pos.addEventListener("onBTConnected", onDeviceConnected);
     const permission = await requestBLEPermissions();
-    console.log({ permission });
     if (permission) {
       const success = await pos.connect(20);
       console.log({ success });
@@ -81,7 +89,7 @@ export default function PaymentScreen({
           currencyCode: "156",
           transactionType,
         });
-        console.log({ result });
+        processResult(result);
       }
     }
 
@@ -90,9 +98,9 @@ export default function PaymentScreen({
     };
   }, []);
 
-  const onQPOSInfo = async () => {
-    const info = await pos.getQposId();
-    console.log({ info });
+  const onCancel = () => {
+    setIsCancelled(true);
+    if (navigation.canGoBack()) navigation.goBack();
   };
 
   return (
@@ -114,7 +122,7 @@ export default function PaymentScreen({
         </View>
       </View>
       <View style={styles.footer}>
-        <TouchableOpacity onPress={onQPOSInfo} style={styles.cancelButton}>
+        <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
           <Text style={styles.cancelButtonText}>Cancelar</Text>
         </TouchableOpacity>
       </View>

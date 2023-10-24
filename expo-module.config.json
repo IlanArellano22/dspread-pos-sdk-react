@@ -4,6 +4,9 @@
     "modules": ["DspreadPosSdkReactModule"]
   },
   "android": {
-    "modules": ["expo.modules.dspreadpossdkreact.DspreadPosSdkReactModule"]
+    "modules": [
+      "expo.modules.dspreadpossdkreact.DspreadPosSdkReactModule",
+      "expo.modules.dspreadpossdkreact.DspreadDUKPK2009_CBC"
+    ]
   }
 }

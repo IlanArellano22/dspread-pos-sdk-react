@@ -27,6 +27,12 @@ const requestBLEAndroid31Permissions = async () => {
     }
   );
 
+  console.log({
+    bluetoothScanPermission,
+    bluetoothConnectPermission,
+    fineLocationPermission,
+  });
+
   return (
     bluetoothScanPermission === "granted" &&
     bluetoothConnectPermission === "granted" &&

@@ -67,6 +67,10 @@ const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
   },
   onRequestQposDisconnected: () => {
     console.log("QPOS DISCONNECTED");
+    const props = getProps();
+    if (props.posStatus === PosStatus.CONNECTED) {
+      props.posStatus = PosStatus.DISCONNECTED;
+    }
   },
   onDeviceFound: ({ device }) => {
     const props = getProps();
@@ -91,11 +95,11 @@ const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
   onRequestTransactionResult: ({ transactionResult }) => {
     console.log("onRequestTransactionResult()", transactionResult);
     const props = getProps();
+    resolveStackQueue(props.promises, true, "doEmvApp");
     switch (transactionResult) {
       case TransactionResult.APPROVED:
         const info = PosService.getICCTag(EncryptType.PLAINTEXT, 1, 1, "5A");
         console.log({ info });
-        resolveStackQueue(props.promises, true, "doEmvApp");
         break;
     }
   },

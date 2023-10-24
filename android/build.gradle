@@ -87,4 +87,5 @@ dependencies {
   implementation project(':expo-modules-core')
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${getKotlinVersion()}"
   implementation files('libs/dspread_pos_sdk_debug_4.4.7.jar')
+    implementation files('libs/DUKPK2009_CBC.jar')
 }

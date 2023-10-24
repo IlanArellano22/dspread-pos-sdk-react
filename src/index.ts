@@ -14,6 +14,7 @@ import {
   CommunicationMode,
   TransactionType,
   BluetoothDevice,
+  TradeResult,
 } from "./types/QPOS";
 import QPOSServiceClass from "./Service/QPOS/class";
 
@@ -35,4 +36,5 @@ export {
   CommunicationMode,
   TransactionType,
   BluetoothDevice,
+  TradeResult,
 };

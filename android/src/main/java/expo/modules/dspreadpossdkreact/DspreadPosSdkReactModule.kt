@@ -21,9 +21,9 @@ import java.util.Hashtable
 class DspreadPosSdkReactModule : Module() {
   private var pos: QPOSService? = null;
 
-  fun _initPosService(): Boolean {
+  fun _initPosService(mode: Int): Boolean {
     Log.d("Efevooo", "INITIALIZE SERVICE");
-    pos = QPOSManager.getInstance(appContext.reactContext, QPOSService.CommunicationMode.BLUETOOTH).getPos();
+    pos = QPOSManager.getInstance(appContext.reactContext, QPOSService.CommunicationMode.values()[mode]).getPos();
     Log.d("Efevooo", "POS INSTANCE: $pos");
     val listener = MyPosClass();
     val handler = Handler(Looper.myLooper()!!);
@@ -43,7 +43,7 @@ class DspreadPosSdkReactModule : Module() {
     Events(*expo.contants.dspreadconstants.Constants.getPOSEvents().toTypedArray())
 
     Function("initPosService") { mode: Int ->
-      _initPosService();
+      _initPosService(mode);
     }
 
     Function("resetPosService") {
