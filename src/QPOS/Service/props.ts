@@ -1,11 +1,11 @@
+import { SingleElement, StackEnviroment } from "../../types/utils";
+import Utils from "../../utils";
 import {
   QPOSListenerTag,
   QPOSPromiseTag,
   QPOSStack,
   RemoveResult,
-} from "../../types/QPOS";
-import { SingleElement, StackEnviroment } from "../../types/utils";
-import Utils from "../../utils";
+} from "../types";
 
 const setPropByStack = <T extends Map<any, any>[]>(
   props: T,

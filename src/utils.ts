@@ -19,6 +19,23 @@ namespace Utils {
   export const MapToObj = <T extends { [key: string]: any }, V extends keyof T>(
     map: Map<V, T[V]>
   ) => Object.fromEntries(map) as T;
+
+  export const deepCopy = <T extends { [key: string]: any }>(obj: T): T => {
+    if (obj === null || typeof obj !== "object" || typeof obj === "function") {
+      return obj;
+    }
+
+    // Crear un nuevo objeto y copiar las propiedades
+    const copiedObject: T = {} as T;
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const value = obj[key];
+        copiedObject[key] = deepCopy(value);
+      }
+    }
+
+    return copiedObject;
+  };
 }
 
 export default Utils;

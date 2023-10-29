@@ -1,6 +1,6 @@
 package expo.utils
 
-class TLV {
+class TLV{
     var tag: String? = null
     var length: String? = null
     var value: String? = null

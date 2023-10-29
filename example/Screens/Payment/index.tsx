@@ -1,15 +1,15 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import LottieView from "lottie-react-native";
 import ImageComponent from "../../components/Image";
 import { RootStackScreenProps } from "../../navigation/types";
 import terminalLottie from "../../assets/lottie/terminal.json";
-import { QPOSContext } from "../../context/QPOSContext";
 import {
   BluetoothDevice,
   CommunicationMode,
   QPOSListenners,
   TradeResult,
+  QPOSServiceManager as pos,
 } from "dspread-pos-sdk-react";
 import {
   useEffectAsync,
@@ -24,7 +24,6 @@ export default function PaymentScreen({
   route,
   navigation,
 }: RootStackScreenProps<"Payment">) {
-  const { pos } = useContext(QPOSContext);
   const events = useEventHandler<"deviceChange", BluetoothDevice>();
   const [isCancelled, setIsCancelled] = useValueHandler(false);
   const [showModal, setShowModal] = useState(false);
@@ -59,10 +58,11 @@ export default function PaymentScreen({
     }, 500);
   };
 
-  const processResult = (result: TradeResult) => {};
-
-  const onDeviceConnected = () => {
-    console.log("deviceConnected");
+  const processResult = (transactionResult: TradeResult) => {
+    if (!transactionResult) return;
+    navigation.navigate("Result", {
+      transactionResult,
+    });
   };
 
   useEffect(() => {
@@ -77,11 +77,9 @@ export default function PaymentScreen({
     pos.addPosListeners(listeners);
     pos.initPosService(CommunicationMode.BLUETOOTH);
     pos.addEventListener("onBTConnect", searchDevices);
-    pos.addEventListener("onBTConnected", onDeviceConnected);
     const permission = await requestBLEPermissions();
     if (permission) {
       const success = await pos.connect(20);
-      console.log({ success });
       if (success) {
         const result = await pos.trade(60, {
           amount: amount.replace(".", ""),
@@ -94,6 +92,7 @@ export default function PaymentScreen({
     }
 
     return () => {
+      console.log("TRANSACTION END");
       pos.resetPosService();
     };
   }, []);

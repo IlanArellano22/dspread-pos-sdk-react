@@ -6,7 +6,8 @@
   "android": {
     "modules": [
       "expo.modules.dspreadpossdkreact.DspreadPosSdkReactModule",
-      "expo.modules.dspreadpossdkreact.DspreadDUKPK2009_CBC"
+      "expo.modules.dspreadpossdkreact.DspreadDUKPK2009_CBC",
+      "expo.modules.dspreadpossdkreact.DspreadTLVParser"
     ]
   }
 }

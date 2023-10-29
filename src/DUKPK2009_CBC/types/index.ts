@@ -4,14 +4,14 @@ export interface DUKPK2009_CBC_Module {
     datastrV: string,
     key: Enum_key,
     mode: Enum_mode,
-    clearIpek: string
+    clearIpek: string | null
   ) => string;
   getDate: (
     ksnV: string,
     datastrV: string,
     key: Enum_key,
     mode: Enum_mode,
-    clearIpek: string
+    clearIpek: string | null
   ) => string;
   generatePinBlock: (
     pinKsn: string,

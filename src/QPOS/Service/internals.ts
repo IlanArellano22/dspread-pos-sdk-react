@@ -1,18 +1,20 @@
-import PosService from "../../../module/QPOS";
+import { PosService } from "../Module";
 import {
-  CommunicationMode,
+  DoTradeResult,
   EncryptType,
   Error,
+  ExtraEmvICCData,
   PosStatus,
   QPOSListenners,
-  QPOSProps,
+  CommunicationMode,
   TransactionResult,
-} from "../../../types/QPOS";
-import {
-  finishStackQueue,
-  rejectStackQueue,
-  resolveStackQueue,
-} from "../props";
+  QPOSManagerValues,
+} from "../types";
+import { DEFAULT_TRANSACTION_RESULT } from "./constants";
+import { finishStackQueue, rejectStackQueue, resolveStackQueue } from "./props";
+
+import { TLVParser } from "../../TLVParser";
+import { DUKPK2009_CBC, Enum_key, Enum_mode } from "../../DUKPK2009_CBC";
 
 const POSTimeFormat = (date: Date) => {
   const year = date.getFullYear();
@@ -25,7 +27,10 @@ const POSTimeFormat = (date: Date) => {
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
 };
 
-const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
+const createInternalListeners = ({
+  getProps,
+  setProps,
+}: Pick<QPOSManagerValues, "getProps" | "setProps">): QPOSListenners => ({
   onQposIdResult: ({ info }) => {
     const props = getProps();
     resolveStackQueue(props.promises, info, "getQposId");
@@ -50,12 +55,14 @@ const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
       amountOptions.currencyCode,
       amountOptions.transactionType
     );
-    props.amountOptions = undefined;
+    setProps({ amountOptions: undefined });
   },
   onRequestQposConnected: () => {
     console.log("INTERNAL QPOS CONNECTED");
     const props = getProps();
-    props.posStatus = PosStatus.CONNECTED;
+    setProps({
+      posStatus: PosStatus.CONNECTED,
+    });
     if (props.mode === CommunicationMode.BLUETOOTH) {
       finishStackQueue(
         props.listeners,
@@ -69,7 +76,9 @@ const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
     console.log("QPOS DISCONNECTED");
     const props = getProps();
     if (props.posStatus === PosStatus.CONNECTED) {
-      props.posStatus = PosStatus.DISCONNECTED;
+      setProps({
+        posStatus: PosStatus.DISCONNECTED,
+      });
     }
   },
   onDeviceFound: ({ device }) => {
@@ -95,16 +104,69 @@ const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
   onRequestTransactionResult: ({ transactionResult }) => {
     console.log("onRequestTransactionResult()", transactionResult);
     const props = getProps();
-    resolveStackQueue(props.promises, true, "doEmvApp");
     switch (transactionResult) {
       case TransactionResult.APPROVED:
-        const info = PosService.getICCTag(EncryptType.PLAINTEXT, 1, 1, "5A");
-        console.log({ info });
+        const pan = PosService.getICCTag(EncryptType.PLAINTEXT, 0, 1, "5A")
+          ?.tlv;
+        const entryMode = PosService.getICCTag(
+          EncryptType.PLAINTEXT,
+          0,
+          1,
+          "9F39"
+        )?.tlv;
+        const track2 = PosService.getICCTag(EncryptType.PLAINTEXT, 0, 1, "57")
+          ?.tlv;
+        const tag9F21 = PosService.getICCTag(
+          EncryptType.PLAINTEXT,
+          0,
+          1,
+          "9F21"
+        )?.tlv;
+        resolveStackQueue(
+          props.promises,
+          {
+            result: DoTradeResult.ICC,
+            decodeData: {
+              ...DEFAULT_TRANSACTION_RESULT.decodeData,
+              encPAN: `${pan.substring(4, 12)}XXXX${pan.substring(
+                16,
+                pan.length
+              )}`,
+              encTrack2: track2,
+            },
+          },
+          "doEmvApp"
+        );
+        break;
+      default:
+        resolveStackQueue(
+          props.promises,
+          DEFAULT_TRANSACTION_RESULT,
+          "doEmvApp"
+        );
         break;
     }
   },
   onRequestOnlineProcess: ({ tlv }) => {
     console.log("onRequestOnlineProcess()");
+    const props = getProps();
+    const parse = TLVParser.parse(tlv);
+    const onLineksn = TLVParser.searchTLV(parse, "C0");
+    const onLineblockData = TLVParser.searchTLV(parse, "C2");
+    if (onLineksn && onLineblockData) {
+      let emvicc = DUKPK2009_CBC.getDUKPT(
+        onLineksn.value,
+        onLineblockData.value,
+        Enum_key.DATA,
+        Enum_mode.ECB,
+        null
+      );
+      emvicc = emvicc.substring(8);
+      if (!props.extraEmvICCData)
+        setProps({
+          extraEmvICCData: { EmvICC: emvicc },
+        });
+    }
     PosService.sendOnlineProcessResult("8A023030");
   },
   onDoTradeResult: (result) => {
@@ -182,4 +244,4 @@ const getInternalListeners = (getProps: () => QPOSProps): QPOSListenners => ({
   },
 });
 
-export default getInternalListeners;
+export default createInternalListeners;

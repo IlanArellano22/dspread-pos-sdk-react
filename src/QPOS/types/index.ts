@@ -1,5 +1,10 @@
 import { Subscription } from "expo-modules-core";
-import { StackEnviroment } from "../utils";
+import { StackEnviroment } from "../../types/utils";
+
+export type QPOSEventListener = <K extends QPOSListenerTag>(
+  event: K,
+  listener: QPOSEventType[K]
+) => void;
 
 type DecodeDataKeys =
   | "cardholderName"
@@ -317,6 +322,10 @@ export enum EncryptType {
   PLAINTEXT,
 }
 
+export interface ICCTag {
+  tlv: string;
+}
+
 export interface QPOSService {
   getQposId: () => void;
   getQposInfo: () => void;
@@ -368,7 +377,7 @@ export interface QPOSService {
     cardType: number,
     tagCount: number,
     tagArrStr: string
-  ) => Record<string, string>;
+  ) => ICCTag;
   setAmount: (
     amount: string,
     cashbackAmount: string,
@@ -441,12 +450,28 @@ export enum RemoveResult {
   ALL,
 }
 
+export interface ExtraEmvICCData {
+  EmvICC: string;
+}
+
+export interface QPOSManagerValues {
+  getProps: () => Readonly<QPOSProps>;
+  getListeners: () => Readonly<QPOSListenners>;
+  getInternalListeners: () => Readonly<QPOSListenners>;
+  getQPOSSuscriptions: () => Readonly<Suscribers>;
+  setProps: (props: Partial<QPOSProps>) => void;
+  setListeners: (listeners: QPOSListenners) => void;
+  setinternalListeners: (internalListeners: QPOSListenners) => void;
+  setQPOSSuscriptions: (QPOSSuscriptions: Suscribers) => void;
+}
+
 export interface QPOSProps {
   promises: StackEnviroment<QPOSPromise[]>;
   listeners: StackEnviroment<QPOSListenner[]>;
   posStatus: PosStatus;
   mode: CommunicationMode;
   amountOptions?: AmountOptions;
+  extraEmvICCData?: ExtraEmvICCData;
 }
 
 export interface AmountOptions {

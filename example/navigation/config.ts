@@ -1,5 +1,9 @@
 import { LinkingOptions } from "@react-navigation/native";
-import { TransactionResult, TransactionType } from "dspread-pos-sdk-react";
+import {
+  TradeResult,
+  TransactionResult,
+  TransactionType,
+} from "dspread-pos-sdk-react";
 
 export type RootStackParamList = {
   Amount: undefined;
@@ -8,7 +12,7 @@ export type RootStackParamList = {
     amount: string;
   };
   Result: {
-    transactionResult: TransactionResult;
+    transactionResult: TradeResult;
   };
 };
 

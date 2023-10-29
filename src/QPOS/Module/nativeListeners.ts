@@ -1,6 +1,6 @@
 import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
-import PosService from "../../../module/QPOS";
-import { QPOSListenners, Suscribers } from "../../../types/QPOS";
+import PosService from "./nativeModule";
+import { QPOSListenners, Suscribers } from "../types";
 
 namespace QPOSListennerManager {
   const emitter = new EventEmitter(
@@ -8,7 +8,6 @@ namespace QPOSListennerManager {
   );
 
   export function addListenners(listenners: QPOSListenners): Suscribers {
-    console.log({ listenners });
     let suscriptions: Suscribers = {};
     for (const key in listenners) {
       suscriptions[key] = emitter.addListener(key, listenners[key]);
