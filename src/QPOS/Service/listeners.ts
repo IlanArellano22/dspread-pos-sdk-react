@@ -40,20 +40,20 @@ export const createListenersMethods = ({
     );
   };
 
-  const _addPosListeners = (listenners: QPOSListenners) => {
+  const addPosListeners = (listenners: QPOSListenners) => {
     mergeListeners(listenners);
   };
 
   const removePosListeners = () => {
     const QPOSSuscriptions = getQPOSSuscriptions();
-    if (!QPOSSuscriptions || JSON.stringify(QPOSSuscriptions) === "{}") return;
+    if (!QPOSSuscriptions || Utils.isEmptyObject(QPOSSuscriptions)) return;
     QPOSListennerManager.removeEventListenners(QPOSSuscriptions);
   };
 
   const emitPosListeners = () => {
     const listeners = getListeners();
     const internalListeners = getInternalListeners();
-    if (listeners === internalListeners) {
+    if (!Utils.deepEqual(listeners, internalListeners)) {
       console.warn(QPOS_ERROR_MESSAGES.LISTENERS_NOT_MERGED);
     }
     removePosListeners();
@@ -61,7 +61,7 @@ export const createListenersMethods = ({
   };
 
   return {
-    _addPosListeners,
+    addPosListeners,
     initListeners,
     removePosListeners,
     emitPosListeners,

@@ -14,6 +14,7 @@ export type RootStackParamList = {
   Result: {
     transactionResult: TradeResult;
   };
+  Details: undefined;
 };
 
 export const LinkingConfiguration: LinkingOptions<RootStackParamList> = {
@@ -23,6 +24,7 @@ export const LinkingConfiguration: LinkingOptions<RootStackParamList> = {
       Amount: "amount",
       Payment: "payment",
       Result: "result",
+      Details: "details",
     },
   },
 };

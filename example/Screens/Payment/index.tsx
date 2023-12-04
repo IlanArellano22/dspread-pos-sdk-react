@@ -1,32 +1,26 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import LottieView from "lottie-react-native";
 import ImageComponent from "../../components/Image";
 import { RootStackScreenProps } from "../../navigation/types";
 import terminalLottie from "../../assets/lottie/terminal.json";
 import {
-  BluetoothDevice,
-  CommunicationMode,
   QPOSListenners,
   TradeResult,
   QPOSServiceManager as pos,
+  CardTradeMode,
 } from "dspread-pos-sdk-react";
-import {
-  useEffectAsync,
-  useEventHandler,
-  useValueHandler,
-} from "@ihaz/react-ui-utils";
-import modalManager from "../../components/Manager/modalManager";
-import DeviceListModal from "./modals/deviceListModal";
+import { useValueHandler } from "@ihaz/react-ui-utils";
 import { requestBLEPermissions } from "../../services/permissions";
+import useFocusEffectAsync from "../../hooks/useFocusEffectAsync";
+import useSelectBTDevice from "../../hooks/useSelectBTDevice";
 
 export default function PaymentScreen({
   route,
   navigation,
 }: RootStackScreenProps<"Payment">) {
-  const events = useEventHandler<"deviceChange", BluetoothDevice>();
+  const { searchDevices } = useSelectBTDevice();
   const [isCancelled, setIsCancelled] = useValueHandler(false);
-  const [showModal, setShowModal] = useState(false);
   const { amount, transactionType } = route.params;
 
   const listeners = useMemo<QPOSListenners>(
@@ -37,26 +31,12 @@ export default function PaymentScreen({
       onRequestSetAmount: () => {
         console.log("onRequestSetAmount()");
       },
-      onError: () => {
-        console.log("An error has ocurr");
+      onError: ({ errorState }) => {
+        console.log("An error has ocurr", errorState);
       },
     }),
     []
   );
-
-  const onCloseListener = (selectedDevice: BluetoothDevice | null) => {
-    pos.stopScan();
-    if (!selectedDevice) return;
-    pos.connectBluetoothDevice(selectedDevice.address);
-  };
-
-  const searchDevices = (device: BluetoothDevice) => {
-    console.log({ device });
-    setShowModal(true);
-    setTimeout(() => {
-      events.listen("deviceChange", device);
-    }, 500);
-  };
 
   const processResult = (transactionResult: TradeResult) => {
     if (!transactionResult) return;
@@ -65,32 +45,26 @@ export default function PaymentScreen({
     });
   };
 
-  useEffect(() => {
-    if (showModal) {
-      modalManager
-        .show(DeviceListModal, { event: events })
-        .then(onCloseListener);
-    }
-  }, [showModal]);
-
-  useEffectAsync(async () => {
+  useFocusEffectAsync(async () => {
     pos.addPosListeners(listeners);
-    pos.initPosService(CommunicationMode.BLUETOOTH);
     pos.addEventListener("onBTConnect", searchDevices);
     const permission = await requestBLEPermissions();
     if (permission) {
       const success = await pos.connect(20);
       if (success) {
-        const result = await pos.trade(60, {
-          amount: amount.replace(".", ""),
-          cashbackAmount: "",
-          currencyCode: "156",
-          transactionType,
-        });
+        const result = await pos.trade(
+          60,
+          {
+            amount: amount.replace(".", ""),
+            cashbackAmount: "",
+            currencyCode: "156",
+            transactionType,
+          },
+          CardTradeMode.SWIPE_TAP_INSERT_CARD_NOTUP_UNALLOWED_LOW_TRADE
+        );
         processResult(result);
       }
     }
-
     return () => {
       console.log("TRANSACTION END");
       pos.resetPosService();

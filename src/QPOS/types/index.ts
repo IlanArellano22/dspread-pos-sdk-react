@@ -397,6 +397,7 @@ export interface QPOSService {
   getCvmKeyList: () => string;
   getEncryptData: () => Record<string, string>;
   setQuickEmv: (isQuickEnv: boolean) => void;
+  getSdkVersion: () => string;
 }
 
 export type QPOSListenners = Partial<Listenners>;

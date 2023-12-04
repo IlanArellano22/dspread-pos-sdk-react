@@ -1,3 +1,4 @@
+import Utils from "../../utils";
 import { PosService } from "../Module";
 import {
   AmountOptions,
@@ -10,6 +11,8 @@ import {
   CommunicationMode,
   QPOSEventListener,
   QPOSManagerValues,
+  QPOSId,
+  QPOSInfo,
 } from "../types";
 import { QPOS_ERROR_MESSAGES } from "./constants";
 import { createStackEnviroment } from "./props";
@@ -17,12 +20,17 @@ import { createStackEnviroment } from "./props";
 export const createImplMethods = ({
   getProps,
   setProps,
+  getQPOSSuscriptions,
 }: QPOSManagerValues) => {
   function initProps() {
+    const currProps = getProps();
     setProps({
       promises: createStackEnviroment<QPOSPromise[]>([]),
       listeners: createStackEnviroment<QPOSListenner[]>([]),
-      posStatus: PosStatus.OFF,
+      posStatus:
+        currProps.posStatus !== PosStatus.CONNECTED
+          ? PosStatus.OFF
+          : currProps.posStatus,
       mode: CommunicationMode.BLUETOOTH,
       amountOptions: undefined,
       extraEmvICCData: undefined,
@@ -102,9 +110,17 @@ export const createImplMethods = ({
     return PosService.scanQPos2Mode(timeout);
   };
 
-  const getQposIdImpl = () => {
-    posStatusMiddleware();
-    return new Promise<string | null>((resolve, reject) => {
+  const resolveSuscriptions = <IResult>(
+    resolve: (res: IResult) => void
+  ): boolean => {
+    const empty = Utils.isEmptyObject(getQPOSSuscriptions());
+    if (empty) resolve(null as unknown as IResult);
+    return !empty;
+  };
+
+  const getQposIdImpl = () =>
+    new Promise<QPOSId | null>((resolve, reject) => {
+      if (!resolveSuscriptions(resolve)) return;
       let props = getProps();
       props.promises.set({
         tag: "getQposId",
@@ -113,11 +129,10 @@ export const createImplMethods = ({
       });
       PosService.getQposId();
     });
-  };
 
-  const getQposInfoImpl = () => {
-    posStatusMiddleware();
-    return new Promise((resolve, reject) => {
+  const getQposInfoImpl = () =>
+    new Promise<QPOSInfo | null>((resolve, reject) => {
+      if (!resolveSuscriptions(resolve)) return;
       let props = getProps();
       props.promises.set({
         tag: "getQposInfo",
@@ -126,7 +141,6 @@ export const createImplMethods = ({
       });
       PosService.getQposInfo();
     });
-  };
 
   const getBluetoothStateImpl = () => {
     return PosService.getBluetoothState();
@@ -134,6 +148,10 @@ export const createImplMethods = ({
 
   const stopScanImpl = () => {
     PosService.stopScanQPos2Mode();
+  };
+
+  const getSdkVersionImpl = () => {
+    return PosService.getSdkVersion();
   };
 
   const connectBluetoothDeviceImpl = (blueToothAddress: string) => {
@@ -177,5 +195,6 @@ export const createImplMethods = ({
     resetPosServiceImpl,
     connectBluetoothDeviceImpl,
     initProps,
+    getSdkVersionImpl,
   };
 };

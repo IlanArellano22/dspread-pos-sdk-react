@@ -36,6 +36,42 @@ namespace Utils {
 
     return copiedObject;
   };
+
+  export const deepEqual = <
+    T extends { [key: string]: any },
+    U extends { [key: string]: any },
+  >(
+    obj1: T,
+    obj2: U
+  ) => {
+    if (obj1 === (obj2 as unknown as T)) return true;
+
+    if (
+      typeof obj1 !== "object" ||
+      typeof obj2 !== "object" ||
+      typeof obj1 === null ||
+      typeof obj2 === null
+    )
+      return false;
+
+    const obj1_keys = Object.keys(obj1);
+    const obj2_keys = Object.keys(obj2);
+
+    if (obj1_keys.length !== obj2_keys.length) return false;
+
+    for (const k of obj1_keys) {
+      if (!deepEqual(obj1[k], obj2[k])) return false;
+    }
+
+    return true;
+  };
+
+  export const isEmptyObject = <T extends { [key: string]: any }>(
+    obj: T
+  ): boolean => {
+    if (!obj || typeof obj !== "object") return false;
+    return JSON.stringify(obj) === "{}";
+  };
 }
 
 export default Utils;

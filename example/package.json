@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@ihaz/js-ui-utils": "^1.0.4-alpha",
     "@ihaz/react-ui-utils": "^1.2.1-beta",
     "@react-native-community/masked-view": "^0.1.11",
     "@react-navigation/native": "^6.1.9",

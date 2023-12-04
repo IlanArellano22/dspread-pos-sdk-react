@@ -16,33 +16,12 @@ import { createQPOSManagerValues } from "./values";
 
 namespace QPOSServiceManager {
   const values = createQPOSManagerValues();
-
-  const {
-    addEventListenerImpl,
-    destroyPosServiceImpl,
-    doEmvAppImpl,
-    doTradeImpl,
-    getBluetoothStateImpl,
-    getQposIdImpl,
-    getQposInfoImpl,
-    initPosServiceImpl,
-    resetPosServiceImpl,
-    scanQPos2ModeImpl,
-    setCardTradeModeImpl,
-    stopScanImpl,
-    connectBluetoothDeviceImpl,
-    initProps,
-  } = createImplMethods(values);
-  const {
-    _addPosListeners,
-    emitPosListeners,
-    initListeners,
-    removePosListeners,
-  } = createListenersMethods(values);
+  const implMethods = createImplMethods(values);
+  const listenersMethods = createListenersMethods(values);
 
   function _init() {
-    initProps();
-    initListeners();
+    implMethods.initProps();
+    listenersMethods.initListeners();
     console.log("exec", values.getProps());
   }
 
@@ -50,20 +29,19 @@ namespace QPOSServiceManager {
   _init();
 
   export const addEventListener: QPOSEventListener = (event, listener) => {
-    addEventListenerImpl(event, listener);
+    implMethods.addEventListenerImpl(event, listener);
   };
 
   export const destroyPosService = () => {
-    destroyPosServiceImpl();
+    implMethods.destroyPosServiceImpl();
   };
 
   export const addPosListeners = (listeners: QPOSListenners) => {
-    _addPosListeners(listeners);
+    listenersMethods.addPosListeners(listeners);
   };
 
-  export const initPosService = (mode: CommunicationMode) => {
+  export const initPosService = (mode: CommunicationMode): boolean => {
     const props = values.getProps();
-    console.log({ props });
     if (props.posStatus === PosStatus.INITIALIZATED) {
       throw new Error(QPOS_ERROR_MESSAGES.ALREADY_INITIALIZATED);
     }
@@ -71,13 +49,13 @@ namespace QPOSServiceManager {
       mode,
     });
     //Create a POS service Instance in the Native Project
-    const success = initPosServiceImpl(mode);
-    console.log({ success, status: props.posStatus });
+    const success = implMethods.initPosServiceImpl(mode);
     if (success) {
       if (props.posStatus === PosStatus.CONNECTED) resetPosService();
       values.setProps({
         posStatus: PosStatus.INITIALIZATED,
       });
+      return success;
     } else {
       throw new Error(QPOS_ERROR_MESSAGES.NO_INSTANCE_CREATED);
     }
@@ -91,18 +69,18 @@ namespace QPOSServiceManager {
     if (props.mode !== CommunicationMode.BLUETOOTH) {
       throw new Error("Comunication mode not defined as BLUETOOTH");
     }
-    connectBluetoothDeviceImpl(blueToothAddress);
+    implMethods.connectBluetoothDeviceImpl(blueToothAddress);
   };
 
   const processTrade = async (
     timeout: number,
     amountOptions: AmountOptions
   ): Promise<TradeResult> => {
-    const doTradeResult = await doTradeImpl(timeout, amountOptions);
+    const doTradeResult = await implMethods.doTradeImpl(timeout, amountOptions);
 
     switch (doTradeResult.result) {
       case DoTradeResult.ICC:
-        const envApp = await doEmvAppImpl();
+        const envApp = await implMethods.doEmvAppImpl();
         return envApp;
       default:
         return doTradeResult;
@@ -114,27 +92,30 @@ namespace QPOSServiceManager {
     amountOptions: AmountOptions,
     cardTradeMode?: CardTradeMode
   ): Promise<TradeResult> => {
-    setCardTradeModeImpl(cardTradeMode);
+    implMethods.setCardTradeModeImpl(cardTradeMode);
     return await processTrade(timeout, amountOptions);
   };
 
   export const stopScan = () => {
-    stopScanImpl();
+    implMethods.stopScanImpl();
   };
 
   export const connect = (timeout: number) => {
-    return new Promise((resolve, reject) => {
+    return new Promise<boolean>((resolve, reject) => {
       const props = values.getProps();
-      if (props.posStatus !== PosStatus.INITIALIZATED) {
+      if (
+        props.mode === null ||
+        ![PosStatus.INITIALIZATED, PosStatus.CONNECTED].includes(
+          props.posStatus
+        )
+      ) {
         reject(QPOS_ERROR_MESSAGES.NO_POS_INITIALIZATED);
+        return;
       }
-      if (props.mode === null) {
-        reject(QPOS_ERROR_MESSAGES.NO_POS_INITIALIZATED);
-      }
-      emitPosListeners();
+      listenersMethods.emitPosListeners();
       switch (props.mode) {
         case CommunicationMode.BLUETOOTH:
-          const bluethootStatus = getBluetoothStateImpl();
+          const bluethootStatus = implMethods.getBluetoothStateImpl();
           if (bluethootStatus) {
             values.setProps({
               posStatus: PosStatus.CONNECTED,
@@ -146,7 +127,7 @@ namespace QPOSServiceManager {
               "onBTConnected"
             );
           } else {
-            const success = scanQPos2ModeImpl(timeout);
+            const success = implMethods.scanQPos2ModeImpl(timeout);
             if (!success)
               reject(
                 "Device has not bluethoot enabled or not have user permissions"
@@ -170,14 +151,16 @@ namespace QPOSServiceManager {
   };
 
   export const resetPosService = () => {
-    resetPosServiceImpl();
-    removePosListeners();
+    implMethods.resetPosServiceImpl();
+    listenersMethods.removePosListeners();
     _init();
   };
 
-  export const getQposInfo = async () => await getQposInfoImpl();
+  export const getQposInfo = async () => await implMethods.getQposInfoImpl();
 
-  export const getQposId = async () => await getQposIdImpl();
+  export const getQposId = async () => await implMethods.getQposIdImpl();
+
+  export const getSdkVersion = () => implMethods.getSdkVersionImpl();
 }
 
 export default QPOSServiceManager;

@@ -4,6 +4,7 @@ import { ViewProps } from "@ihaz/react-ui-utils/lib/manager/View/comp";
 import ModalBase from "../../../components/Manager/modalBase";
 import { HandleEvents } from "@ihaz/react-ui-utils/lib/hooks/useEventHandler";
 import { BluetoothDevice } from "dspread-pos-sdk-react";
+import ModalList from "../../../components/List/modalList";
 
 interface DeviceListModalProps extends ViewProps<BluetoothDevice | null> {
   event: HandleEvents<"deviceChange", BluetoothDevice>;
@@ -44,19 +45,14 @@ export default function DeviceListModal({
   }, []);
 
   return (
-    <ModalBase
-      animationType="slide"
-      transparent
-      visible
-      onRequestClose={() => onClose(null)}
-    >
+    <ModalList onRequestClose={() => onClose(null)}>
       <FlatList
         data={devices}
         style={styles.list}
         renderItem={({ item }) => <RenderItem {...item} onClose={onClose} />}
         keyExtractor={(item) => `${item.address}`}
       />
-    </ModalBase>
+    </ModalList>
   );
 }
 

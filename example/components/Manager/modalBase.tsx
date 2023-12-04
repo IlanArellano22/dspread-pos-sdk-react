@@ -1,61 +1,58 @@
-import React from "react";
-import { Modal, ModalProps, StyleSheet, View } from "react-native";
-import { commonStyles } from "../../constants";
+import React, { Children } from "react";
+import {
+  Dimensions,
+  Modal,
+  ModalProps,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 
-interface ModalBaseProps extends ModalProps {}
+export interface ModalBaseProps extends ModalProps {
+  onHide?: () => void;
+}
 
 type ModalType = "center" | "top" | "bottom";
 
-export default function ModalBase({ children, ...restProps }: ModalBaseProps) {
+const { width, height } = Dimensions.get("window");
+
+export default function ModalBase({
+  children,
+  onHide,
+  ...props
+}: ModalBaseProps) {
   return (
-    <Modal {...restProps}>
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>{children}</View>
-      </View>
+    <Modal {...props} animationType="fade" transparent visible>
+      {onHide && (
+        <TouchableWithoutFeedback
+          style={[
+            StyleSheet.absoluteFill,
+            styles.closeArea,
+            {
+              borderWidth: 1,
+              borderColor: "#000000",
+            },
+          ]}
+          onPress={onHide}
+        >
+          <View style={styles.closeContain} />
+        </TouchableWithoutFeedback>
+      )}
+      {children}
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+  closeArea: {
+    width,
+    height,
+    zIndex: 100,
   },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  button: {
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2,
-  },
-  buttonOpen: {
-    backgroundColor: "#F194FF",
-  },
-  buttonClose: {
-    backgroundColor: "#2196F3",
-  },
-  textStyle: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: "center",
+  closeContain: {
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
 });
